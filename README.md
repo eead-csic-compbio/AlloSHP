@@ -14,6 +14,14 @@ Ruben Sancho (1,2), Bruno Contreras Moreira (1,3)
 
 ## Simple mode: mapped reads
 
+### Read mapping 
+
+### Merging BAM files to produce a single non-redundant VCF file
+
+```{shell}
+./_rm_double_lines.pl sample_data/RNAseq_Bd5_Chr10_chr10.vcf.bz2 > sample_data/RNAseq_Bd5_Chr10_chr10.rm.vcf
+```
+
 
 
 ## Advanced mode: mapped reads + syntenic chromosome coordinates
