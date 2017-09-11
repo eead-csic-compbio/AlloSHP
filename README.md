@@ -16,4 +16,4 @@ Ruben Sancho (1,2), Bruno Contreras Moreira (1,3)
 
 
 
-## Advanced mode: mapped reads + syntenyc chromosome coords
+## Advanced mode: mapped reads + syntenic chromosome coordinates
