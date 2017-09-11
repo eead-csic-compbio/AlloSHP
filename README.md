@@ -1,6 +1,7 @@
 # vcf2alignment
 
-Protocol to produce multiple sequence alignments out of VCF files which can be used for phylogenetic tree construction. 
+Protocol to produce multiple sequence alignments out of [VCF](https://en.wikipedia.org/wiki/Variant_Call_Format)
+files which can be used for phylogenetic tree construction. 
 
 **Authors**
 Ruben Sancho (1,2), Bruno Contreras Moreira (1,3)
@@ -9,5 +10,10 @@ Ruben Sancho (1,2), Bruno Contreras Moreira (1,3)
 2. Escuela Politécnica Superior de Huesca, U.Zaragoza, Spain
 3. Fundación ARAID, Zaragoza, Spain
 
-## Software dependencies
+## Flowchart
 
+## Simple mode: mapped reads
+
+
+
+## Advanced mode: mapped reads + syntenyc chromosome coords
