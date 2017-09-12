@@ -21,17 +21,26 @@ It requires Perl5, which should be installed on all Linux environments, plus som
 
 ### Read mapping 
 
-<!-- Explicar los mapeos con BWA mem o Hisat2, segun sea -->
+<!-- Explicar los mapeos con BWA mem o Hisat2, segun sea
+
+Explicar que habra muestras con depth of coverage mas limitada y otras mejores,
+aparte de otras que se pueden definir como outgroups para los arboles poesteriores
+ -->
 
 ### Merging BAM files to produce a single non-redundant VCF file
 
 <!-- Explicar los comandos para ir desde los multiples SAM a un solo VCF --> 
 
 ```{shell}
-./_rm_double_lines.pl RNAseq_Bd5_Chr10_chr10.raw.vcf > sample_data/RNAseq_Bd5_Chr10_chr10.vcf
+utils/rm_double_lines.pl RNAseq_Bd5_Chr10_chr10.raw.vcf > sample_data/RNAseq_Bd5_Chr10_chr10.vcf
 bzip2 sample_data/RNAseq_Bd5_Chr10_chr10.vcf
 ```
 
+### Producing a multiple alignment file
 
+```{shell}
+./vcf2alignment.pl sample_data/RNAseq_Bd5_Chr10_chr10.vcf.bz2 \
+  sample_data/RNAseq_Bd5_Chr10_chr10.fna &> sample_data/RNAseq_Bd5_Chr10_chr10.log 
+```
 
 ## Advanced mode: mapped reads + syntenic chromosome coordinates
