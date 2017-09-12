@@ -16,10 +16,15 @@ Ruben Sancho (1,2), Bruno Contreras Moreira (1,3)
 
 ### Read mapping 
 
+<!-- Explicar los mapeos con BWA mem o Hisat2, segun sea -->
+
 ### Merging BAM files to produce a single non-redundant VCF file
 
+<!-- Explicar los comandos para ir desde los multiples SAM a un solo VCF --> 
+
 ```{shell}
-./_rm_double_lines.pl sample_data/RNAseq_Bd5_Chr10_chr10.vcf.bz2 > sample_data/RNAseq_Bd5_Chr10_chr10.rm.vcf
+./_rm_double_lines.pl RNAseq_Bd5_Chr10_chr10.raw.vcf > sample_data/RNAseq_Bd5_Chr10_chr10.vcf
+bzip2 sample_data/RNAseq_Bd5_Chr10_chr10.vcf
 ```
 
 
