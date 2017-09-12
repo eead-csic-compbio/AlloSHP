@@ -48,9 +48,28 @@ in the source code (with a text editor) to change the expected outcome:
 | $ONLYPOLYMORPHIC | 1 | set to 0 to keep fixed loci, helps with sparse data |
 | $OUTFILEFORMAT | fasta | currently can also take nexus and phylip format |
 
+By default, the produced alignment is in FASTA format. Note that a logfile is also saved in this example,
+which contains a list of valid loci and several statistics:
 ```{shell}
 ./vcf2alignment.pl sample_data/RNAseq_Bd5_Chr10_chr10.vcf.bz2 \
   sample_data/RNAseq_Bd5_Chr10_chr10.fna &> sample_data/RNAseq_Bd5_Chr10_chr10.log 
 ```
+
+If the format is changed in the source to 'phylip', 
+an [interleaved PHYLIP](http://evolution.genetics.washington.edu/phylip/doc/sequence.html) 
+file is produced, with names shortened to 10 chars (see source code to choose from prefixes or suffixes):
+```{shell}
+./vcf2alignment.pl sample_data/RNAseq_Bd5_Chr10_chr10.vcf.bz2 \
+  sample_data/RNAseq_Bd5_Chr10_chr10.phy &> sample_data/RNAseq_Bd5_Chr10_chr10.log
+```
+
+As mentioned, [NEXUS](https://en.wikipedia.org/wiki/Nexus_file) alignments can also be produced 
+by editing the source to 'nexus':
+```{shell}
+./vcf2alignment.pl sample_data/RNAseq_Bd5_Chr10_chr10.vcf.bz2 \
+  sample_data/RNAseq_Bd5_Chr10_chr10.nex &> sample_data/RNAseq_Bd5_Chr10_chr10.log
+```
+
+
 
 ## Advanced mode: mapped reads + syntenic chromosome coordinates

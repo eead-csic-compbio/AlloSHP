@@ -3,47 +3,38 @@ use strict;
 
 # converts an input VCF file, with might be GZIP compressed, into a  
 # multiple sequence alignment in several supported formats 
-# (check @validformatsbelow)
+# (check @validformats below)
 
-# Input: VCF file with reads mapped to concatenated Bd,Bstacei & Bsylvaticum references, might be gzipped 
+# Input: VCF file with reads mapped to concatenated reference genomes, possibly compressed.
+# Chromosome names of genomes must be different.
 
 # Bruno Contreras, Ruben Sancho EEAD-CSIC 2017
 
+# Please edit and uncomment to shorten sample names in output alignment
 my %vcf_real_names = (
-'arb_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 'B.arbuscula',
-'B422_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 'B.phoenicoides_B422',
-'hyb_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 'B.hybridum_BdTR6g',
-'mex_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 'B.mexicanum',
-'pho_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 'B.phoenicoides',
-'pin_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 'B.pinnatum_2x',
-'boi_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 'B.boissieri',
-'ret_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 'B.retusum',
-'rup_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 'B.rupestre',
-'sta_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 'B.stacei_TE4.3',
-'syl_Cor_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 'B.sylvaticum_Cor',
-'syl_Esp_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 'B.sylvaticum_Esp',
-'syl_Gre_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 'B.sylvaticum_Gre',
-'Bdistachyon_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 'B.distachyon_Bd21',
-'Oryza_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 'Oryza sativa',
-'Sorghum_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 'Sorghum bicolor'
+#'arb_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 'B.arbuscula',
+#'hyb_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 'B.hybridum_BdTR6g',
 );
 
+# Please edit and uncomment to set samples which should not count as missing data.
+# For instance, we used it to leave outgroups out of these calculations, as their
+# reads were WGS reads with significantly more depth than GBS/RNAseq samples
 my %genomic_samples = (
-        'syl_Cor_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 1,
-        'syl_Esp_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 1,
-        'syl_Gre_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 1,
+  'syl_Cor_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 1,
+  'syl_Esp_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 1,
+  'syl_Gre_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 1,
 	'Bdistachyon_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 1,
 	'Oryza_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 1,
 	'Sorghum_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 1
 );
 
 # VCF filtering and output options, edit as required
-my $MINDEPTHCOVERPERSAMPLE = 10; #10
-my $MAXMISSINGSAMPLES      = 8;
-my $ONLYPOLYMORPHIC        = 1; # set to 0 to keep fixed loci, helps with sparse data
-my $OUTFILEFORMAT          = 'fasta'; 
+my $MINDEPTHCOVERPERSAMPLE = 10; # natural, min number of reads mapped supporting a locus
+my $MAXMISSINGSAMPLES      = 8;  # natural, max number of missing samples accepted per locus
+my $ONLYPOLYMORPHIC        = 1;  # set to 0 to keep fixed loci, helps with sparse data
+my $OUTFILEFORMAT          = 'fasta'; # can also take other formats in @validformats
 
-# VCF format, should be ok but change if needed
+# first guess of key VCF columns, adjusted in real time below
 my $COLUMNFIRSTSAMPLE      = 9; # zero-based, VCF format http://www.1000genomes.org/node/101, format is previous one
 my $GENOTYPECOLUMNFORMAT   = 0; # zero-based, initial guess, they are set for eahc line
 my $DEPTHCOLUMNFORMAT      = 1; 
@@ -52,11 +43,11 @@ my $DEPTHCOLUMNFORMAT      = 1;
 my $GZIPEXE  = 'gzip'; 
 my $BZIP2EXE = 'bzip2';
 
-if(!$ARGV[1]){ die "# usage: $0 <infile.vcf[.gz|.bz2]> <outfile>\n" }
+if(!$ARGV[1]){ die "# usage: $0 <infile.vcf[.gz|.bz2]> <output alignment file>\n" }
 
 my ($filename,$outfilename) = @ARGV;
 
-my ($n_of_samples,$n_of_loci,$depthcover,$missing,$genotype,$allele) = (0,0);
+my ($n_of_samples,$n_of_loci,$n_var_loci,$depthcover,$missing,$genotype,$allele) = (0,0,0);
 my ($corr_coord,$sample,$lastsample,$idx,$lastsampleidx,$file);
 my (@samplenames,@MSA,%MSAref,%stats,%refallele,%refstrand);
 my ($snpname,$badSNP,$shortname,$magic,%contigstats);
@@ -143,10 +134,11 @@ while(<VCF>)
 			#0/0:0,255,255:93:0:99
 			#1/1:255,255,0:185:0:99
 			#0/1:236,0,237:66:7:9
-			my @sampledata = split(/:/,$rawdata[$idx]); #print "$rawdata[$idx]\n";
+			my @sampledata = split(/:/,$rawdata[$idx]); 
 			$genotype = $sampledata[$GENOTYPECOLUMNFORMAT];
 			$depthcover = $sampledata[$DEPTHCOLUMNFORMAT]; 
-			$allele = 'N'; # by default is unknown
+			$allele = 'N'; # default 
+      
       if($genotype eq '0/0')
       {
         if($depthcover >= $MINDEPTHCOVERPERSAMPLE){ 
@@ -237,6 +229,7 @@ while(<VCF>)
 				}	
 			}
 
+      if(scalar(keys(%nts)) > 1){ $n_var_loci++ }
 			$n_of_loci++;
 		}	
 	}
@@ -253,6 +246,10 @@ while(<VCF>)
 close(VCF);
 
 printf(STDERR "# number of valid loci=$n_of_loci\n");
+if(!$ONLYPOLYMORPHIC)
+{
+  printf(STDERR "# number of polymorphic loci=$n_var_loci\n");  
+} warn "\n";
 
 open(OUTFILE,">$outfilename") || die "# cannot create output file $outfilename, exit\n";
 
@@ -269,23 +266,27 @@ elsif($OUTFILEFORMAT eq 'phylip')
 
 foreach $sample (0 .. $lastsample)
 {
+  if($vcf_real_names{$samplenames[$sample]}){
+    $shortname = $vcf_real_names{$samplenames[$sample]} 
+  } 
+  else{ $shortname = $samplenames[$sample]; }
+
 	if($OUTFILEFORMAT eq 'nexus')
 	{
-		print OUTFILE "$vcf_real_names{$samplenames[$sample]} $MSA[$sample]\n";
+    print OUTFILE "$shortname $MSA[$sample]\n";
 	}
 	elsif($OUTFILEFORMAT eq 'phylip')
 	{
-		$shortname = $vcf_real_names{$samplenames[$sample]};
-		if(length($shortname)>10)
-		{ 
-			$shortname = '_'.substr($samplenames[$sample],-9); 
+		if(length($shortname)>10){ 
+			$shortname = substr($shortname,0,9).'_'; # prefix
+      #$shortname = '_'.substr($shortname,-9); # suffix
 			printf(STDERR "# phylip sample name shortened: $samplenames[$sample] -> $shortname\n");
 		}
 		print OUTFILE "$shortname    $MSA[$sample]\n";
 	}
 	elsif($OUTFILEFORMAT eq 'fasta')
 	{
-		print OUTFILE ">$vcf_real_names{$samplenames[$sample]}\n";
+		print OUTFILE ">$shortname\n";
 		print OUTFILE "$MSA[$sample]\n";
 	}
 } 
@@ -297,7 +298,7 @@ if($OUTFILEFORMAT eq 'nexus')
 
 close(OUTFILE);
 
-printf(STDERR "# stats (#SNPs):\n");
+printf(STDERR "\n\n# stats (#SNPs):\n");
 
 foreach $sample (0 .. $lastsample)
 {
