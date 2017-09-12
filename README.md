@@ -38,6 +38,16 @@ bzip2 sample_data/RNAseq_Bd5_Chr10_chr10.vcf
 
 ### Producing a multiple alignment file
 
+Script [vcf2alignment.pl](./vcf2alignment.pl) ships with the following global variables which might be modified 
+in the source code (with a text editor) to change the expected outcome:
+
+| variable name | default value | definition |
+|:-----|:---------------:|:-------|
+| $MINDEPTHCOVERPERSAMPLE | 10 | natural, min number of reads mapped supporting a locus |
+| $MAXMISSINGSAMPLES | 8 | natural, max number of missing samples accepted per locus |
+| $ONLYPOLYMORPHIC | 1 | set to 0 to keep fixed loci, helps with sparse data |
+| $OUTFILEFORMAT | fasta | currently can also take nexus and phylip format |
+
 ```{shell}
 ./vcf2alignment.pl sample_data/RNAseq_Bd5_Chr10_chr10.vcf.bz2 \
   sample_data/RNAseq_Bd5_Chr10_chr10.fna &> sample_data/RNAseq_Bd5_Chr10_chr10.log 
