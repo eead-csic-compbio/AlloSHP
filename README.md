@@ -10,6 +10,11 @@ Ruben Sancho (1,2), Bruno Contreras Moreira (1,3)
 2. Escuela Politécnica Superior de Huesca, U.Zaragoza, Spain
 3. Fundación ARAID, Zaragoza, Spain
 
+## Software dependencies
+
+This protocol has been tested on Linux x86_64 systems, although it should also work on Mac-OSX settings.
+It requires Perl5, which should be installed on all Linux environments, plus some standard programs (gzip, bzip2).
+
 ## Flowchart
 
 ## Simple mode: mapped reads
