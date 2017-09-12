@@ -10,16 +10,16 @@ Ruben Sancho (1,2), Bruno Contreras Moreira (1,3)
 2. Escuela Politécnica Superior de Huesca, U.Zaragoza, Spain
 3. Fundación ARAID, Zaragoza, Spain
 
-## Software dependencies
+## 0) Software dependencies
 
 This protocol has been tested on Linux x86_64 systems, although it should also work on Mac-OSX settings.
 It requires Perl5, which should be installed on all Linux environments, plus some standard programs (gzip, bzip2).
 
-## Flowchart
+## 1) Flowchart
 
-## Simple mode: mapped reads
+## 2) Simple mode: mapped reads
 
-### Read mapping 
+### 2.1) Read mapping 
 
 <!-- Explicar los mapeos con BWA mem o Hisat2, segun sea
 
@@ -27,7 +27,7 @@ Explicar que habra muestras con depth of coverage mas limitada y otras mejores,
 aparte de otras que se pueden definir como outgroups para los arboles poesteriores
  -->
 
-### Merging BAM files to produce a single non-redundant VCF file
+### 2.2) Merging BAM files to produce a single non-redundant VCF file
 
 <!-- Explicar los comandos para ir desde los multiples SAM a un solo VCF --> 
 
@@ -36,7 +36,7 @@ utils/rm_double_lines.pl RNAseq_Bd5_Chr10_chr10.raw.vcf > sample_data/RNAseq_Bd5
 bzip2 sample_data/RNAseq_Bd5_Chr10_chr10.vcf
 ```
 
-### Producing a multiple alignment file
+### 2.3) Producing a multiple alignment file
 
 Script [vcf2alignment.pl](./vcf2alignment.pl) ships with the following global variables which might be modified 
 in the source code (with a text editor) to change the expected outcome:
@@ -72,4 +72,4 @@ by editing the source to 'nexus':
 
 
 
-## Advanced mode: mapped reads + syntenic chromosome coordinates
+## 3) Advanced mode: mapped reads + syntenic chromosome coordinates
