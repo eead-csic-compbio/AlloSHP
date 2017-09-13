@@ -25,12 +25,17 @@ It requires Perl5, which should be installed on all Linux environments, plus som
 These are the data required to run this pipeline:
 
 + 1+ (ideally more) reference genomes of species of the taxa of interest, **concatenated in a single FASTA file**.
-In our *Brachypodium* benchmark we only used complete chromosome arms, and left out single contigs and centromeric parts. 
+In our *Brachypodium* benchmark we selected three reference genomes 
+(*Bdistachyon.fna*, *Bstacei.fna* and *Bsylvaticum.fna*) and 
+only used complete chromosome arms, and left out single contigs and centromeric parts. 
 This might require renaming chromosomes to make sure that each species has unique names.
 
 + **FASTQ files of sequence reads** from the samples to be analyzed, which should belong to the same taxa, and perhaps some outgroups as well.
 
 ## 2) Simple mode: mapped reads
+
+In the next section we illustrate how to test this pipeline with three reference genomes
+used in our benchmark (*Bdistachyon.fna*, *Bstacei.fna* and *Bsylvaticum.fna*).
 
 ### 2.1) Read mapping 
 
@@ -89,6 +94,8 @@ The produced multiple alignment should be rendered with appropriate software for
 
 ## 3) Advanced mode: syntenic coordinates + mapped reads
 
+This mode requires the simple mode to be run ahead, as it expects a pre-computed logfile.
+
 ### 3.1) Whole-genome alignments
 
 Alignments must be computed to find syntenic segments among the reference genomes available for read mapping.
@@ -138,6 +145,10 @@ utils/mapcoords.pl Bdistachyon.Bstacei.block12K.aln.hq.fna.gz Bdistachyon_msk.fn
 utils/mapcoords.pl Bdistachyon.Bsylvaticum.block12K.aln.hq.fna.gz Bdistachyon_msk.fna Bsylvaticum_msk.fna \
   > Bdistachyon.Bsylvaticum.coords.tsv 2> Bdistachyon.Bsylvaticum.coords.log
 ```
+
+A few more operations in the terminal are required:
+
+
 
 ### 3.2) Read mapping 
 
