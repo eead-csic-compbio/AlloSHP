@@ -192,7 +192,7 @@ while(<VCF>)
 			$sample++;
 		} 
 
-		# poor sites are skipped
+		# make sure genomic-only sites are skipped
 		if($gbs_samples == 0) 
 		{
 			$badSNP = 1;
