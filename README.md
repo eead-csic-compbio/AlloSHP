@@ -70,6 +70,7 @@ by editing the source to 'nexus':
   sample_data/RNAseq_Bd5_Chr10_chr10.nex &> sample_data/RNAseq_Bd5_Chr10_chr10.log
 ```
 
+The produced multiple alignment should be rendered with appropriate software for visual quality check:
 ![Multiple alignment generated](./pics/MSA_simple.png)
 
 
