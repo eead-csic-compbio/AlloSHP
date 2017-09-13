@@ -10,12 +10,25 @@ Ruben Sancho (1,2), Bruno Contreras Moreira (1,3)
 2. Escuela Politécnica Superior de Huesca, U.Zaragoza, Spain
 3. Fundación ARAID, Zaragoza, Spain
 
-## 0) Software dependencies
+## Pipeline overview
+
+<!-- flowchart -->
+
+### Software dependencies
 
 This protocol has been tested on Linux x86_64 systems, although it should also work on Mac-OSX settings.
 It requires Perl5, which should be installed on all Linux environments, plus some standard programs (gzip, bzip2).
 
-## 1) Flowchart
+
+## 1) Input data 
+
+These are the data required to run this pipeline:
+
++ 1+ (ideally more) reference genomes of species of the taxa of interest, **concatenated in a single FASTA file**.
+In our *Brachypodium* benchmark we only used complete chromosome arms, and left out single contigs and centromeric parts. 
+This might require renaming chromosomes to make sure that each species has unique names.
+
++ **FASTQ files of sequence reads** from the samples to be analyzed, which should belong to the same taxa, and perhaps some outgroups as well.
 
 ## 2) Simple mode: mapped reads
 
@@ -74,4 +87,72 @@ The produced multiple alignment should be rendered with appropriate software for
 ![Multiple alignment generated](./pics/MSA_simple.png)
 
 
-## 3) Advanced mode: mapped reads + syntenic chromosome coordinates
+## 3) Advanced mode: syntenic coordinates + mapped reads
+
+### 3.1) Whole-genome alignments
+
+Alignments must be computed to find syntenic segments among the reference genomes available for read mapping.
+We selected [CGaln](http://www.iam.u-tokyo.ac.jp/chromosomeinformatics/rnakato/cgaln/index.html) for this task,
+which requires the input sequences to be [soft-masked](https://genomevolution.org/wiki/index.php/Masked) ahead.
+These files are not included here as they're bulky, but we do show how we use processed them in our benchmark:
+
+```{shell, eval=FALSE}
+# index individual references (n=3)
+~/soft/Cgaln/maketable Bdistachyon_msk.fna
+~/soft/Cgaln/maketable Bstacei_msk.fna
+~/soft/Cgaln/maketable Bsylvaticum_msk.fna
+
+# alignments with custom parameters
+
+~/soft/Cgaln/Cgaln Bdistachyon_msk.fna Bstacei_msk.fna \
+  -o Bdistachyon.Bstacei.block12K.aln.hq.fna -r -X12000 -fc -cons -otype2
+
+~/soft/Cgaln/Cgaln Bdistachyon_msk.fna Bsylvaticum_msk.fna \
+  -o Bdistachyon.Bsylvaticum.block12K.aln.hq.fna -r -X12000 -fc -cons -otype2 
+```
+
+We recomend that users visualize the alignments to make sure they make sense and to optimize CGaln parameters. 
+This can be done producing *.dot* files instead of FASTA output:
+```{shell, eval=FALSE}
+~/soft/Cgaln/Cgaln Bdistachyon_msk.fna Bstacei_msk.fna \
+  -o Bdistachyon.Bstacei.block12K.aln.hq.dot -r -X12000 -fc -cons 
+
+~/soft/Cgaln/Cgaln Bdistachyon_msk.fna Bsylvaticum_msk.fna \
+  -o Bdistachyon.Bsylvaticum.block12K.aln.hq.dot -r -X12000 -fc -cons 
+```
+These files can then be inspected with gnuplot:
+
+```{shell, eval=FALSE}
+gnuplot
+gnuplot> plot "result.dot" with lines
+```
+
+These alignments can then be compressed and equivalent/syntenic positions extracted as follows: 
+```{shell, eval=FALSE}
+utils/mapcoords.pl Bdistachyon.Bstacei.block12K.aln.hq.fna.gz Bdistachyon_msk.fna Bstacei_msk.fna \
+  > Bdistachyon.Bstacei.coords.tsv 2> Bdistachyon.Bstacei.coords.log
+
+utils/mapcoords.pl Bdistachyon.Bsylvaticum.block12K.aln.hq.fna.gz Bdistachyon_msk.fna Bsylvaticum_msk.fna \
+  > Bdistachyon.Bsylvaticum.coords.tsv 2> Bdistachyon.Bsylvaticum.coords.log
+```
+
+### 3.2) Read mapping 
+
+<!-- Explicar los mapeos con BWA mem o Hisat2, segun sea
+
+Explicar que habra muestras con depth of coverage mas limitada y otras mejores,
+aparte de otras que se pueden definir como outgroups para los arboles poesteriores
+ -->
+
+### 3.3) Merging BAM files to produce a single non-redundant VCF file
+
+<!-- Explicar los comandos para ir desde los multiples SAM a un solo VCF 
+
+```{shell}
+utils/rm_double_lines.pl RNAseq_Bd5_Chr10_chr10.raw.vcf > sample_data/RNAseq_Bd5_Chr10_chr10.vcf
+bzip2 sample_data/RNAseq_Bd5_Chr10_chr10.vcf
+```
+-->
+
+### 3.4) Producing a multiple alignment file
+
