@@ -33,11 +33,9 @@ This might require renaming chromosomes to make sure that each species has uniqu
 + **FASTQ files** from the samples to be analyzed, which should belong to the same taxa, and perhaps some outgroups as well.
 These can be GBS, RADseq, RNAseq or even WGS sequence reads.
 
----
-In the forthcoming sections we illustrate how to test this pipeline with three reference genomes
-used in our benchmark (*Bdistachyon.fna*, *Bstacei.fna* and *Bsylvaticum.fna*),
-which have the following chromosome name prefixes, respectively: Bd, Chr and chr.
----
+*In the forthcoming sections we illustrate how to test this pipeline with three reference genomes
+used in our benchmark (Bdistachyon.fna, Bstacei.fna and Bsylvaticum.fna),
+which have the following chromosome name prefixes, respectively: Bd, Chr and chr.*
 
 ## 2) Simple mode: mapped reads
 
