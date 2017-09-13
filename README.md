@@ -173,6 +173,7 @@ join -o "1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8" -1 5 -2 1 <(zcat Bdistachyon.Bsylvatic
 perl -lane 'print join(" ",@F[0 .. 3])." $F[4].".join(" ",@F[5 .. 8])' |sort -k5,5 -S 80G) list_Bsylvaticum_SNPs.coords | \
 perl -plne 's/[\s\.]/\t/g' > sample_data/Bdistachyon.Bsylvaticum.coords.SNP.tsv
 ```
+Note that the resulting coordinates are zero-based.
 
 ### 3.2) Producing a multiple alignment file
 
