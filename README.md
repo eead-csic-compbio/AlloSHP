@@ -190,3 +190,11 @@ bzip2 sample_data/RNAseq_Bd5_Chr10_chr10.vcf
 
 ### 3.4) Producing a multiple alignment file
 
+Now we call script [vcf2alignment_synteny.pl](./vcf2alignment_synteny.pl) to output an alignment in FASTA format. 
+Note that now the alignment splits each sample in as many subgenomes as references were concatenated.
+As mentioned earlier, in our tests we found that $ONLYPOLYMORPHIC=0 worked well with RNAseq data:
+```{shell}
+./vcf2alignment_synteny.pl sample_data/RNAseq_Bd5_Chr10_chr10.vcf.bz2 \
+  sample_data/RNAseq_Bd5_Chr10_chr10_synteny.fna &> sample_data/RNAseq_Bd5_Chr10_chr10_synteny.log
+```
+
