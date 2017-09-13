@@ -30,7 +30,8 @@ In our *Brachypodium* benchmark we selected three reference genomes
 only used complete chromosome arms, and left out single contigs and centromeric parts. 
 This might require renaming chromosomes to make sure that each species has unique names.
 
-+ **FASTQ files of sequence reads** from the samples to be analyzed, which should belong to the same taxa, and perhaps some outgroups as well.
++ **FASTQ files** from the samples to be analyzed, which should belong to the same taxa, and perhaps some outgroups as well.
+These can be GBS, RADseq, RNAseq or even WGS sequence reads.
 
 ## 2) Simple mode: mapped reads
 
@@ -67,7 +68,8 @@ in the source code (with a text editor) to change the expected outcome:
 | $OUTFILEFORMAT | fasta | currently can also take nexus and phylip format |
 
 By default, the produced alignment is in FASTA format. Note that a logfile is also saved in this example,
-which contains a list of valid loci and several statistics:
+which contains a list of valid loci and several statistics. 
+In our tests, we found that $ONLYPOLYMORPHIC=0 worked well with RNAseq data:
 ```{shell}
 ./vcf2alignment.pl sample_data/RNAseq_Bd5_Chr10_chr10.vcf.bz2 \
   sample_data/RNAseq_Bd5_Chr10_chr10.fna &> sample_data/RNAseq_Bd5_Chr10_chr10.log 
@@ -141,14 +143,32 @@ with script [mapcoords.pl](./utils/mapcoords.pl) as follows:
 ```{shell, eval=FALSE}
 utils/mapcoords.pl Bdistachyon.Bstacei.block12K.aln.hq.fna.gz Bdistachyon_msk.fna Bstacei_msk.fna \
   > Bdistachyon.Bstacei.coords.tsv 2> Bdistachyon.Bstacei.coords.log
+gzip Bdistachyon.Bstacei.coords.tsv
 
 utils/mapcoords.pl Bdistachyon.Bsylvaticum.block12K.aln.hq.fna.gz Bdistachyon_msk.fna Bsylvaticum_msk.fna \
   > Bdistachyon.Bsylvaticum.coords.tsv 2> Bdistachyon.Bsylvaticum.coords.log
+gzip Bdistachyon.Bsylvaticum.coords.tsv
 ```
 
-A few more operations in the terminal are required:
+A few more operations in the terminal are required to produce the final files, which are provided in [sample_data](./sample_data/):
+```{shell, eval=FALSE}
+grep "valid locus" RNAseq_Bd5_Chr10_chr10.log | grep -v -P "Bd\d+" | grep chr | \
+perl -lne 'if(/(chr\d+)_(\d+)/){ printf("%s.%d\n",$1,$2-1) }' | sort | uniq > list_Bsylvaticum_SNPs.coords
 
+grep "valid locus" RNAseq_Bd5_Chr10_chr10.log | grep -v -P "Bd\d+" | grep Chr | \
+perl -lne 'if(/(Chr\d+)_(\d+)/){ printf("%s.%d\n",$1,$2-1) }' | sort | uniq > list_Bstacei_SNPs.coords
 
+grep "valid locus" RNAseq_Bd5_Chr10_chr10.log | \
+perl -lne 'if(/(Bd\d+)_(\d+)/){ printf("%s\t%d\n",$1,$2-1) }' | sort -k1,1 -k2,2n | uniq > list_Bdistachyon_SNPs.coords
+
+join -o "1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8" -1 5 -2 1 <(zcat Bdistachyon.Bstacei.coords.tsv.gz | \
+perl -lane 'print join(" ",@F[0 .. 3])." $F[4].".join(" ",@F[5 .. 8])' |sort -k5,5 -S 80G) list_Bstacei_SNPs.coords | \
+perl -plne 's/[\s\.]/\t/g' > sample_data/Bdistachyon.Bstacei.coords.SNP.tsv
+
+join -o "1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8" -1 5 -2 1 <(zcat Bdistachyon.Bsylvaticum.coords.tsv.gz | \
+perl -lane 'print join(" ",@F[0 .. 3])." $F[4].".join(" ",@F[5 .. 8])' |sort -k5,5 -S 80G) list_Bsylvaticum_SNPs.coords | \
+perl -plne 's/[\s\.]/\t/g' > Bdistachyon.Bsylvaticum.coords.SNP.tsv
+```
 
 ### 3.2) Read mapping 
 
