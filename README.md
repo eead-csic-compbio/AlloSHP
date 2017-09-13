@@ -35,7 +35,7 @@ These can be GBS, RADseq, RNAseq or even WGS sequence reads.
 
 *In the forthcoming sections we illustrate how to test this pipeline with three reference genomes
 used in our benchmark (Bdistachyon.fna, Bstacei.fna and Bsylvaticum.fna),
-which have the following chromosome name prefixes, respectively: Bd, Chr and chr.*
+which have the following chromosome name prefixes, respectively: __Bd__, __Chr__ and __chr__.*
 
 ## 2) Simple mode: mapped reads
 
