@@ -46,11 +46,14 @@ Explicar que habra muestras con depth of coverage mas limitada y otras mejores,
 aparte de otras que se pueden definir como outgroups para los arboles poesteriores
  -->
 
-### 2.2) Merging BAM files to produce a single non-redundant VCF file
+### 2.2) Merging mappings to produce a single non-redundant VCF file
+
+This process is summarized in the next flowchart:
+![merge flowchart](./pics/FASTQ2VCF.png)
 
 <!-- Explicar los comandos para ir desde los multiples SAM a un solo VCF --> 
 
-```{shell}
+```{shell ,eval=FALSE}
 utils/rm_double_lines.pl RNAseq_Bd5_Chr10_chr10.raw.vcf > sample_data/RNAseq_Bd5_Chr10_chr10.vcf
 bzip2 sample_data/RNAseq_Bd5_Chr10_chr10.vcf
 ```
@@ -96,7 +99,7 @@ The produced multiple alignment should be rendered with appropriate software for
 
 ## 3) Advanced mode: syntenic coordinates + mapped reads
 
-This mode requires the simple mode to be run ahead, as it expects a pre-computed logfile.
+This mode requires the simple mode to be run before-hand, as it expects a pre-computed logfile.
 
 ### 3.1) Whole-genome alignments
 
@@ -170,25 +173,7 @@ perl -lane 'print join(" ",@F[0 .. 3])." $F[4].".join(" ",@F[5 .. 8])' |sort -k5
 perl -plne 's/[\s\.]/\t/g' > sample_data/Bdistachyon.Bsylvaticum.coords.SNP.tsv
 ```
 
-### 3.2) Read mapping 
-
-<!-- Explicar los mapeos con BWA mem o Hisat2, segun sea
-
-Explicar que habra muestras con depth of coverage mas limitada y otras mejores,
-aparte de otras que se pueden definir como outgroups para los arboles poesteriores
- -->
-
-### 3.3) Merging BAM files to produce a single non-redundant VCF file
-
-<!-- Explicar los comandos para ir desde los multiples SAM a un solo VCF 
-
-```{shell}
-utils/rm_double_lines.pl RNAseq_Bd5_Chr10_chr10.raw.vcf > sample_data/RNAseq_Bd5_Chr10_chr10.vcf
-bzip2 sample_data/RNAseq_Bd5_Chr10_chr10.vcf
-```
--->
-
-### 3.4) Producing a multiple alignment file
+### 3.2) Producing a multiple alignment file
 
 Now we call script [vcf2alignment_synteny.pl](./vcf2alignment_synteny.pl) to output an alignment in FASTA format. 
 Note that now the alignment splits each sample in as many subgenomes as references were concatenated.
