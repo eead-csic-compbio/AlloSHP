@@ -129,7 +129,8 @@ gnuplot> plot "result.dot" with lines
 This an example whole-genome alignment plot:
 ![whole-genome alignment plot](./pics/dotplot.png)
 
-These alignments can then be compressed and equivalent/syntenic positions extracted as follows: 
+These alignments can then be compressed and equivalent/syntenic positions extracted 
+with script [mapcoords.pl](./utils/mapcoords.pl) as follows: 
 ```{shell, eval=FALSE}
 utils/mapcoords.pl Bdistachyon.Bstacei.block12K.aln.hq.fna.gz Bdistachyon_msk.fna Bstacei_msk.fna \
   > Bdistachyon.Bstacei.coords.tsv 2> Bdistachyon.Bstacei.coords.log
