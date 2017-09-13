@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 
-# converts an input VCF file, with might be GZIP compressed, into a  
+# converts an input VCF file, with might be GZIP/BZIP2 compressed, into a  
 # multiple sequence alignment in several supported formats 
 # (check @validformats below)
 
