@@ -1,80 +1,67 @@
 #!/usr/bin/perl -w
 use strict;
 
-# takes an input VCF file with reads mapped to three concatenated brachy references (Bd,Bstacei & Bsylvaticum),
-# with might be GZIP compressed, and uses synteny-based equivalent coordinates to map Bstacei & Bsylvaticum
-# back to Bd chromosome positions, in an effort to separate subgenomes, which are multiply aligned in FASTA format
+# Takes an input VCF file with reads mapped to several concatenated references,
+# and uses synteny-based equivalent coordinates to map polymorphism back to the 
+# main/user-defined chromosome positions, in an effort to separate subgenomes, 
+# which are then multiply aligned.
+# Only FASTA format is produced to facilitate collapsing sequences afterwards.
 
-# Input1: VCF file with reads mapped to concatenated Bd,Bstacei & Bsylvaticum references, might be gzipped 
-# Input2: SNPs from genomic alignments are also added to the final MSA 
+# Input: VCF file with reads mapped to concatenated references, might be compressed
 
-# Bruno Contreras, Ruben Sancho EEAD-CSIC 31May2017
+# Bruno Contreras, Ruben Sancho EEAD-CSIC 2017
 
-my $SYNTENYZEROBASED = 1; # set to 1 if synteny coords are 0-based
-
-# synteny-based equivalent positions
-# these files are used to translate Bstacei & Bsylv positions to Bd coordinates
+# Synteny-based equivalent positions produced with utils/mapcoords.pl
+# These files are used to translate Bstacei & Bsylv positions to Bd coordinates
 my %synfiles = (
-'Bstacei'=>'Bdistachyon.Bstacei.coords.SNP.tsv',
-'Bsylvaticum'=>'Bdistachyon.Bsylvaticum2.coords.SNP.tsv'
+  'Bstacei'     =>'sample_data/Bdistachyon.Bstacei.coords.SNP.tsv',
+  'Bsylvaticum' =>'sample_data/Bdistachyon.Bsylvaticum.coords.SNP.tsv'
 );
 
+# Prefixes/regular expressions that connect chromosomes to reference genomes
 my %chrcodes = (
-'Bdis' =>qr/Bd\d+/,
-'Bsta' =>qr/Chr\d+/,
-'Bsyl' =>qr/chr\d+/
+  'Bdis' =>qr/Bd\d+/,
+  'Bsta' =>qr/Chr\d+/,
+  'Bsyl' =>qr/chr\d+/
 );
 
-# alignments of reference outgroups genomes
-# these are used to add outgroups to alignment
-#my %ref_files = (
-#'ref_RiceNipponBare'=>'/home/contrera/brachy/sintenia/Bdistachyon.rice.ref.coords.tsv',
-#'ref_Sorgumbicolor'=>'/home/contrera/brachy/sintenia/Bdistachyon.sorgum.ref.coords.tsv'
-#);
-
+# Please edit and uncomment to shorten sample names in output alignment
 my %vcf_real_names = (
-'arb_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 'B.arbuscula',
-'B422_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 'B.phoenicoides_B422',
-'hyb_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 'B.hybridum_BdTR6g',
-'mex_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 'B.mexicanum',
-'pho_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 'B.phoenicoides',
-'pin_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 'B.pinnatum_2x',
-'boi_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 'B.boissieri',
-'ret_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 'B.retusum',
-'rup_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 'B.rupestre',
-'sta_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 'B.stacei_TE4.3',
-'syl_Cor_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 'B.sylvaticum_Cor',
-'syl_Esp_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 'B.sylvaticum_Esp',
-'syl_Gre_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 'B.sylvaticum_Gre',
-'Bdistachyon_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 'B.distachyon_Bd21',
-'Oryza_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 'Oryza_sativa',
-'Sorghum_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 'Sorghum_bicolor'
+  #'arb_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 'B.arbuscula',
+  #'hyb_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 'B.hybridum_BdTR6g',
 );
 
+# Please edit and uncomment to set samples which should not count as missing data.
+# For instance, we used it to leave outgroups out of these calculations, as their
+# reads were WGS reads with significantly more depth than GBS/RNAseq samples
 my %genomic_samples = (
-        'syl_Cor_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 1,
-        'syl_Esp_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 1,
-        'syl_Gre_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 1,
-        'Bdistachyon_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 1,
-        'Oryza_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 1,
-        'Sorghum_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 1
+  'syl_Cor_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 1,
+  'syl_Esp_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 1,
+  'syl_Gre_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 1,
+  'Bdistachyon_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 1,
+  'Oryza_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 1,
+  'Sorghum_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 1
 );
 
 # VCF filtering and output options, edit as required
-my $MINDEPTHCOVERPERSAMPLE = 10; #10
-my $MAXMISSINGSAMPLES      = 8;
-my $OUTFILEFORMAT          = 'fasta'; 
+my $SYNTENYZEROBASED       = 1;  # set to 1 if synteny coords are 0-based, as those produced by CGaln
+my $MINDEPTHCOVERPERSAMPLE = 10; # natural, min number of reads mapped supporting a locus
+my $MAXMISSINGSAMPLES      = 8;  # natural, max number of missing samples accepted per locus
+my $ONLYPOLYMORPHIC        = 0;  # set to 0 to keep fixed loci, helps with sparse data
+my $OUTFILEFORMAT          = 'fasta'; # can also take other formats in @validformats
 
-# VCF format, should be ok but change if needed
+
+
+# first guess of key VCF columns, adjusted in real time below
 my $COLUMNFIRSTSAMPLE      = 9; # zero-based, VCF format http://www.1000genomes.org/node/101, format is previous one
-
 my $GENOTYPECOLUMNFORMAT   = 0; # zero-based, initial guess, they are set for eahc line
 my $DEPTHCOLUMNFORMAT      = 1; 
 
-# external binaries
-my $GZIPEXE = 'gzip'; # edit if not installed elsewhere and not in path
+# external binaries, edit if not installed elsewhere and not in path
+my $GZIPEXE  = 'gzip'; 
+my $BZIP2EXE = 'bzip2';
 
-if(!$ARGV[1]){ die "# usage: $0 <infile.vcf[.gz]> <outfile>\n" }
+if(!$ARGV[1]){ die "# usage: $0 <infile.vcf[.gz|.bz2]> <output alignment file>\n" }
 
 my ($filename,$outfilename) = @ARGV;
 
@@ -85,20 +72,13 @@ my ($snpname,$badSNP,$shortname,$magic,%contigstats);
 my ($coord,$subgenome,$code,$corr_snpname,$chr);
 my (%MSA,%corr2snpname,%synmap_fwd,%synmap_rev);
 
-my %IUPACdegen = ( 'AG'=>'R', 'GA'=>'R', 'CT'=>'Y', 'TC'=>'Y',
-					  'CG'=>'S', 'GC'=>'S', 'AT'=>'W', 'TA'=>'W',
-					  'GT'=>'K', 'TG'=>'K', 'AC'=>'M', 'CA'=>'M' );	# by default only biallellic heterozygotes 
+my %IUPACdegen = (  'AG'=>'R', 'GA'=>'R', 'CT'=>'Y', 'TC'=>'Y',
+                    'CG'=>'S', 'GC'=>'S', 'AT'=>'W', 'TA'=>'W',
+                    'GT'=>'K', 'TG'=>'K', 'AC'=>'M', 'CA'=>'M' );	 
 
 my %revcomp = ('A'=>'T', 'T'=>'A','G'=>'C','C'=>'G', 'N'=>'N');
 
-#my @refVCFnames = qw( ref_distachyon ref_Bstacei ref_Bsylvaticum );
-#my %refVCFchrcodes = (
-#'ref_distachyon' =>qr/Bd\d+/,
-#'ref_Bstacei'    =>qr/Chr\d+/,
-#'ref_Bsylvaticum'=>qr/chr\d+/
-#);
-										
-my @validformats = qw( phylip nexus fasta );
+my @validformats = qw( fasta );
 										
 #######################################################
 
@@ -111,7 +91,7 @@ if(!grep(/^$OUTFILEFORMAT$/,@validformats))
 warn "\n# SYNTENYZEROBASED=$SYNTENYZEROBASED\n";
 foreach my $file (keys(%synfiles))
 {
-   warn "# parsing $synfiles{$file}...\n";
+   warn "# parsing syntenic positions $synfiles{$file}...\n";
    my $n_of_positions = 0;
    open(SYNFILE,$synfiles{$file}) || die "# cannot read $synfiles{$file}\n";
    while(<SYNFILE>)
@@ -137,43 +117,9 @@ foreach my $file (keys(%synfiles))
    }
    close(SYNFILE);
    warn "# total positions=$n_of_positions\n";
-}
+} 
+warn "\n";
 
-
-# read alignments of reference genomes
-#foreach $file (sort keys(%ref_files))
-#{
-#   warn "# reading reference $ref_files{$file}...\n";
-#   open(REF,$ref_files{$file}) || die "# cannot read $ref_files{$file}\n";
-#   while(<REF>)
-#   {
-#      #Bd3 3725899 G reverse chr4  32091475  G 64
-#      chomp;
-#      my @rawdata = split(/\t/,$_);
-#
-#      $corr_coord = $rawdata[1];
-#      if($SYNTENYZEROBASED)
-#      {
-#         $corr_coord++;
-#      }
-#
-#      $snpname = "$rawdata[0]_$corr_coord"; # -> position in Bdistachyon
-#
-#      if($rawdata[3] eq 'forward')
-#      {
-#         $refallele{$snpname}{$file} = $rawdata[6];
-#         $refstrand{$snpname}{$file} = 1;
-#      }
-#      else
-#      {
-#         $refallele{$snpname}{$file} = $revcomp{$rawdata[6]};
-#         $refstrand{$snpname}{$file} = -1;
-#      }
-#		
-#      #print "$snpname $file $refallele{$snpname}{$file}\n";
-#   }
-#   close(REF);
-#}
 
 # check input file and choose right way to parse input lines
 my ($genomic_samples,$gbs_samples); 
@@ -181,18 +127,25 @@ open(INFILE,$filename) || die "# cannot open input file $filename, exit\n";
 sysread(INFILE,$magic,2);
 close(INFILE);
 
-if($magic eq "\x1f\x8b") # compressed input
+if($filename =~ /\.gz$/ || $magic eq "\x1f\x8b") # compressed input
 {
-	printf(STDERR "# decompressing VCF file with GZIP\n");
-	open(VCF,"$GZIPEXE -dc $filename |");
-} 
-else{ open(VCF,$filename) }
-	
+  printf(STDERR "# decompressing VCF file with GZIP\n");
+  open(VCF,"$GZIPEXE -dc $filename |");
+}
+elsif($filename =~ /\.bz2$/ || $magic eq "BZ") # BZIP2 compressed input
+{
+  if(!open(VCF,"$BZIP2EXE -dc $filename |"))
+  {
+    die "# cannot read BZIP2 compressed $filename $!\n"
+      ."# please check $BZIP2EXE is installed\n";
+  }
+}
+else{ open(VCF,'<',$filename) }
+
 printf(STDERR "# input VCF file: $filename\n");
 printf(STDERR "# MINDEPTHCOVERPERSAMPLE=$MINDEPTHCOVERPERSAMPLE\n");
 printf(STDERR "# MAXMISSINGSAMPLES=$MAXMISSINGSAMPLES\n");
-#printf(STDERR "# GENOTYPECOLUMNFORMAT=$GENOTYPECOLUMNFORMAT\n");
-#printf(STDERR "# DEPTHCOLUMNFORMAT=$DEPTHCOLUMNFORMAT\n");
+printf(STDERR "# ONLYPOLYMORPHIC=$ONLYPOLYMORPHIC\n");
 printf(STDERR "# OUTFILEFORMAT=$OUTFILEFORMAT\n");
 	
 while(<VCF>)   
@@ -204,14 +157,8 @@ while(<VCF>)
 	{
 		#Bd1	346	.	A	C	999	PASS	DP=4008;VDB=5.239035e-01;...	GT:PL:DP:SP:GQ	1/1:255,255,0:185:0:99	...
 
-		#next if($rawdata[0] ne /^Bd1/); # debugging
-		#next if($rawdata[0] ne /^Chr01/); # debugging
-	
-		# skip non-chr contigs
-		#next if($rawdata[0] =~ m/scaffold/ || $rawdata[0] =~ m/entromer/ || $rawdata[0] =~m /Segkk/);
-
-		# skip non-polymorphic sites
-		#next if($rawdata[4] eq '.');
+    # skip non-polymorphic sites if required
+    next if($rawdata[4] eq '.' && $ONLYPOLYMORPHIC);
 
 		# skip indels
 		next if($rawdata[3] =~ m/[A-Z]{2,}/ || $rawdata[4] =~ m/[A-Z]{2,}/); 
@@ -222,15 +169,15 @@ while(<VCF>)
 		# find out which data fields to parse
 		my @sampledata = split(/:/,$rawdata[$COLUMNFIRSTSAMPLE-1]);
 		foreach my $sd (0 .. $#sampledata)
-      		{
+    {
 			if($sampledata[$sd] eq 'GT'){ $GENOTYPECOLUMNFORMAT = $sd; last }
-         		$sd++;
-      		}
+    	$sd++;
+    }
 		foreach my $sd (0 .. $#sampledata)
-      		{
+    {
 			if($sampledata[$sd] eq 'DP'){ $DEPTHCOLUMNFORMAT = $sd; last }
-         		$sd++;
-      		} 
+    	$sd++;
+    } 
 
 		my (@sequence);
 		my %nts = ( $rawdata[3] => 1 ); # adds ref base call
@@ -299,14 +246,13 @@ while(<VCF>)
 		} 
 
 		# make sure genomic-only sites are skipped
-		if($gbs_samples == 0) # && $genomic_samples > 0)
+		if($gbs_samples == 0) 
 		{
 			$badSNP = 1;
-			#warn "# VCF line contains only genomic samples:\n$_\n";
-		} #else { warn"# $gbs_samples + $missing + $genomic_samples ($badSNP)\n" }
+		} 
 
-		#make sure monomorphic sites are skipped
-		#if(scalar(keys(%nts)) < 2){ $badSNP = 1 }
+    # make sure monomorphic sites are skipped
+    if(scalar(keys(%nts)) < 2 && $ONLYPOLYMORPHIC){ $badSNP = 1 }
 		
 		if(!$badSNP)
 		{
@@ -370,36 +316,6 @@ while(<VCF>)
                                 $corr2snpname{$corr_snpname} .= "$snpname,";
                         }
 
-			# add SNPs from reference genomic alignments (outgroups)
-			#foreach $file (sort keys(%ref_files))
-			#{
-			#	if($refallele{$snpname}{$file})
-			#	{
-			#		$allele = $refallele{$snpname}{$file};
-			#		#$refstrand{$snpname}{$file} = -1;				
-			#		#$revcomp{$rawdata[6]};
-			#	}
-			#	else
-			#	{ 
-			#		$allele = 'N';
-			#	}
-
-			#	$MSAref{$file} .= $allele;
-			#}
-
-			# add nucleotides from reference sequence in VCF file
-			#foreach $file (@refVCFnames)
-			#{
-			#	if($rawdata[0] =~ m/$refVCFchrcodes{$file}/)
-			#	{
-			#		$allele = $rawdata[3];
-			#	}
-			#	else{ $allele = 'N' }
-			#	
-			#	$MSAref{$file} .= $allele;
-			#}
-
-			#last; #debug
 			$n_of_loci++;
 		}	
 	}
