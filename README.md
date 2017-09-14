@@ -208,6 +208,6 @@ In our benchmarks this was the case of our RNAseq sample from *B. stacei*:
 
 and produces a consensus line such as:
 
-    >sta_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam_consensus
+    >B.stacei_map_Bd_Bs_Bsyl_no_contigs.sorted.q30
     ...AGGAATGAACCAGCTTACGAGGAGCCTAGCTACCGAGTGGGCCCAGGACAAGA...
 
