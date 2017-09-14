@@ -14,8 +14,8 @@ use strict;
 # Synteny-based equivalent positions produced with utils/mapcoords.pl
 # These files are used to translate positions of secondary reference genomes
 # to coordinates of the master reference, which is chosen by the user.
-# In our benchmark the master is B.distachyon (Bdis), while B.stacei (Bsta) 
-# and B-sylvaticum (Bsyl) are defined as secondary.
+# In our benchmark the master is B. distachyon (Bdis), while B. stacei (Bsta) 
+# and B. sylvaticum (Bsyl) are defined as secondary.
 
 my $master_ref = 'Bdis';
 
@@ -25,6 +25,7 @@ my %synfiles = (
 );
 
 # Prefixes/regular expressions that connect chromosomes to reference genomes
+# NOTE that they must match the master and 2ary references or subgenomes
 my %chrcodes = (
   'Bdis' =>qr/Bd(\d+)/,
   'Bsta' =>qr/Chr(\d+)/,
@@ -53,7 +54,7 @@ my %genomic_samples = (
 my $SYNTENYZEROBASED       = 1;  # set to 1 if synteny coords are 0-based, as those produced by CGaln
 my $MINDEPTHCOVERPERSAMPLE = 10; # natural, min number of reads mapped supporting a locus
 my $MAXMISSINGSAMPLES      = 8;  # natural, max number of missing samples accepted per locus
-my $ONLYPOLYMORPHIC        = 0;  # set to 0 to keep fixed loci, helps with sparse data
+my $ONLYPOLYMORPHIC        = 1;  # set to 0 to keep fixed loci, helps with sparse data
 my $OUTFILEFORMAT          = 'fasta'; # can also take other formats in @validformats
 
 # first guess of key VCF columns, adjusted in real time below
@@ -330,31 +331,31 @@ while(<VCF>)
 close(VCF);
 
 # print some stats
-warn "\n# loci mapped per subgenome and chromosome\n";
-foreach $subgenome (sort(keys(%contigstats)))
-{
-  print STDERR "# species\t$subgenome";
-  foreach $chr (sort(keys(%{$contigstats{$subgenome}}))){ printf(STDERR "\t%s",$chr) }
-  print STDERR "\n";
-} 
-
-foreach $sample (0 .. $lastsample)
-{
-  $shortname = $vcf_real_names{$samplenames[$sample]} || $samplenames[$sample];
-  foreach $subgenome (sort(keys(%contigstats)))
-  {
-    printf(STDERR "%s\t%s",$shortname,$subgenome);
-    foreach $chr (sort(keys(%{$contigstats{$subgenome}})))
-    {
-      if(defined($contigstats{$subgenome}{$chr}{$sample}{'SNP'})){ 
-        printf(STDERR"\t%d",$contigstats{$subgenome}{$chr}{$sample}{'SNP'});
-      }
-      else{ printf(STDERR"\t0"); }
-    }
-    print STDERR "\n";
-  }
-}
-print STDERR "\n\n";
+#warn "\n# loci mapped per subgenome and chromosome\n";
+#foreach $subgenome (sort(keys(%contigstats)))
+#{
+#  print STDERR "# species\t$subgenome";
+#  foreach $chr (sort(keys(%{$contigstats{$subgenome}}))){ printf(STDERR "\t%s",$chr) }
+#  print STDERR "\n";
+#} 
+#
+#foreach $sample (0 .. $lastsample)
+#{
+#  $shortname = $vcf_real_names{$samplenames[$sample]} || $samplenames[$sample];
+#  foreach $subgenome (sort(keys(%contigstats)))
+#  {
+#    printf(STDERR "%s\t%s",$shortname,$subgenome);
+#    foreach $chr (sort(keys(%{$contigstats{$subgenome}})))
+#    {
+#      if(defined($contigstats{$subgenome}{$chr}{$sample}{'SNP'})){ 
+#        printf(STDERR"\t%d",$contigstats{$subgenome}{$chr}{$sample}{'SNP'});
+#      }
+#      else{ printf(STDERR"\t0"); }
+#    }
+#    print STDERR "\n";
+#  }
+#}
+#print STDERR "\n\n";
 
 # print sorted valid loci
 my @sorted_snpnames =
@@ -378,7 +379,6 @@ if(!$ONLYPOLYMORPHIC)
 # print sorted VCF SNPs
 open(OUTFILE,">$outfilename") || die "# cannot create output file $outfilename, exit\n";
 
-warn "# SNPs called per subgenome and chromosome\n";
 foreach $sample (0 .. $lastsample)
 {
   foreach $subgenome (sort keys(%chrcodes))
@@ -399,8 +399,8 @@ foreach $sample (0 .. $lastsample)
     }
     print OUTFILE "\n";
 
-    printf(STDERR "# %s_%s variants: %d / %d (%1.3f)\n",
-      $shortname,$subgenome,$noNs,$total,$noNs/$total);
+    #printf(STDERR "# %s_%s variants: %d / %d (%1.3f)\n",
+    #  $shortname,$subgenome,$noNs,$total,$noNs/$total);
   }
 }
 
