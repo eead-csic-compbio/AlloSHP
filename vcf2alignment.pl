@@ -219,7 +219,7 @@ while(<VCF>)
         # save stats of missing data
         if($sequence[$sample] eq 'N')
         {
-           $stats{$sample}{'totalNs'}++;
+          $stats{$sample}{'totalNs'}++;
           $contigstats{$sample}{$rawdata[0]}{'N'}++;
         }
         else
