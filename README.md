@@ -100,7 +100,7 @@ The produced multiple alignment should be rendered with appropriate software for
 
 ## 3) Advanced mode: syntenic coordinates + mapped reads
 
-This mode requires the simple mode to be run before-hand, 
+This mode requires the simple mode to be run beforehand, 
 as it needs to read the list of valid loci contained in the logfile generated earlier.
 Note that this mode only makes sense when **at least two reference genomes are concatenated**.
 
@@ -190,4 +190,25 @@ As mentioned earlier, in our tests we found that $ONLYPOLYMORPHIC=0 worked well 
 ./vcf2alignment_synteny.pl sample_data/RNAseq_Bd5_Chr10_chr10.vcf.bz2 \
   sample_data/RNAseq_Bd5_Chr10_chr10_synteny.fna &> sample_data/RNAseq_Bd5_Chr10_chr10_synteny.log
 ```
+
+The resulting multiple alignment now has as many lines per sample as concatenated references, 
+which are handled as subgenomes:
+![Multiple alignment generated](./pics/MSA_subgenomes.png)
+
+Note that samples corresponding to one species of the concatenated references must be collapsed to a single line with script 
+[collapse_aln.pl](./utils/collapse_aln.pl). This script takes as input a FASTA file with the lines of a given sample. 
+In our benchmarks this was the case of our RNAseq sample from *B. stacei*:
+
+>sta_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam_Bdis
+NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN...
+>sta_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam_Bsta
+AGGAATGAACCAGCTTACGAGGAGCCTAGCTACCGAGTGGGCCCAGGACAAGA...
+>sta_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam_Bsyl
+NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN...
+
+and produces a consensus line such as:
+
+>sta_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam_consensus
+AGGAATGAACCAGCTTACGAGGAGCCTAGCTACCGAGTGGGCCCAGGACAAGA...
+
 
