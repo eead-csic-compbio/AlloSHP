@@ -100,14 +100,18 @@ The produced multiple alignment should be rendered with appropriate software for
 
 ## 3) Advanced mode: syntenic coordinates + mapped reads
 
-This mode requires the simple mode to be run before-hand, as it expects a pre-computed logfile.
+This mode requires the simple mode to be run before-hand, 
+as it needs to read the list of valid loci contained in the logfile generated earlier.
 
 ### 3.1) Whole-genome alignments
 
 Alignments must be computed to find syntenic segments among the reference genomes available for read mapping.
 We selected [CGaln](http://www.iam.u-tokyo.ac.jp/chromosomeinformatics/rnakato/cgaln/index.html) for this task,
 which requires the input sequences to be [soft-masked](https://genomevolution.org/wiki/index.php/Masked) ahead.
-These files are not included here as they're bulky, but we do show how we use processed them in our benchmark:
+These files are not included here as they're bulky, but we do show how we use processed them in our benchmark.
+In our benchmark we set *B. distachyon* as our master reference genome for being the best quality assembly at hand.
+Therefore in the next steps we find out syntenic segments on the other reference genomes, thus defined as secondary 
+reference genomes (*B. stacei* and *B. sylvaticum*):
 
 ```{shell, eval=FALSE}
 # index individual references (n=3)
