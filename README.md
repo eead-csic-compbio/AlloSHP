@@ -112,7 +112,8 @@ which requires the input sequences to be [soft-masked](https://genomevolution.or
 These files are not included here as they're bulky, but we do show how we use processed them in our benchmark.
 In our benchmark we set *B. distachyon* as our master reference genome for being the best quality assembly at hand.
 Therefore in the next steps we find out syntenic segments on the other reference genomes, thus defined as secondary 
-reference genomes (*B. stacei* and *B. sylvaticum*):
+reference genomes (*B. stacei* and *B. sylvaticum*). Each individual reference is hence considered a **subgenome** to 
+which reads map:
 
 ```{shell, eval=FALSE}
 # index individual references (n=3)
