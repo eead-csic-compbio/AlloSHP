@@ -39,15 +39,13 @@ which have the following chromosome name prefixes, respectively: __Bd__, __Chr__
 
 ## 2) Simple mode: mapped reads
 
-### 2.1) Read mapping 
-
+### 2.1) Read mapping and merging to produce a single non-redundant VCF file
+ 
 <!-- Explicar los mapeos con BWA mem o Hisat2, segun sea
 
 Explicar que habra muestras con depth of coverage mas limitada y otras mejores,
 aparte de otras que se pueden definir como outgroups para los arboles poesteriores
  -->
-
-### 2.2) Merging mappings to produce a single non-redundant VCF file
 
 This process is summarized in the next flowchart:
 ![merge flowchart](./pics/FASTQ2VCF.png)
@@ -59,7 +57,7 @@ utils/rm_double_lines.pl RNAseq_Bd5_Chr10_chr10.raw.vcf > sample_data/RNAseq_Bd5
 bzip2 sample_data/RNAseq_Bd5_Chr10_chr10.vcf
 ```
 
-### 2.3) Producing a multiple alignment file
+### 2.2) Producing a multiple alignment file
 
 Script [vcf2alignment.pl](./vcf2alignment.pl) ships with the following global variables which might be modified 
 in the source code (with a text editor) to change the expected outcome:
