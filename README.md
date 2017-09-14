@@ -97,6 +97,8 @@ by editing the source to 'nexus':
 The produced multiple alignment should be rendered with appropriate software for visual quality check:
 ![Multiple alignment generated](./pics/MSA_simple.png)
 
+Moreover, the logfile contains usefult stats about the number of mapped loci per chromosome and reference genome.
+
 
 ## 3) Advanced mode: syntenic coordinates + mapped reads
 
