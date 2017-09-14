@@ -102,6 +102,7 @@ The produced multiple alignment should be rendered with appropriate software for
 
 This mode requires the simple mode to be run before-hand, 
 as it needs to read the list of valid loci contained in the logfile generated earlier.
+Note that this mode only makes sense when **at least two reference genomes are concatenated**.
 
 ### 3.1) Whole-genome alignments
 
