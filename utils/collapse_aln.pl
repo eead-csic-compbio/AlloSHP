@@ -1,10 +1,12 @@
-#!/us/bin/perl -w
+#!/usr/bin/perl -w
 use strict;
 
-# takes an input FASTA aligned with vcf2alignment_synteny and collapses subgenome lines (Bdis, Bsta and Bsyl)
-# in one line in diploid species
+# Takes an input FASTA aligned with vcf2alignment_synteny and collapses subgenome lines (Bdis, Bsta and Bsyl)
+# in one line 
 
 # Bruno Contreras, Ruben Sancho EEAD-CSIC June2017
+
+if(!$ARGV[1]){ die "# usage: $0 <FASTA file with 1 subgenome/sequence> <FASTA file with single consensus sequence>\n" }
 
 my $infile = $ARGV[0];
 my $outfile = $ARGV[1];
