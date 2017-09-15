@@ -195,19 +195,27 @@ The resulting multiple alignment now has as many lines per sample as concatenate
 which are handled as subgenomes:
 ![Multiple alignment generated](./pics/MSA_subgenomes.png)
 
-Note that samples corresponding to one species of the concatenated references must be collapsed to a single line with script 
-[collapse_aln.pl](./utils/collapse_aln.pl). This script takes as input a FASTA file with the lines of a given sample. 
-In our benchmarks this was the case of our RNAseq sample from *B. stacei*:
+Note that some subgenomes can be manually removed in some cases. 
+For instance, in the case of *B. distachyon* sample 99% of the RNAseq reads mapped 
+back to its corresponding subgenome, and therefore the **Bsta** and **Bsyl** subgenomes were deleted from the alignment, 
+as they were 99% Ns.
 
-    >sta_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam_Bdis
+Another special case is *B. hybridum*, known to be an allopolyploid whose parental species are *B. distachyon* and *B. stacei*,
+precisely two of the concatenated reference genomes. In this case the **Bsyl** subgenome was also deleted from the alignment.
+
+Finally, other species known to be diploids had their subgenome lines collapsed to a single line with script 
+[collapse_aln.pl](./utils/collapse_aln.pl). This script takes as input a FASTA file with the lines of a given sample. 
+In our benchmarks this was the case of our RNAseq sample from *B. arbuscula*:
+
+    >Barbuscula_Bdis
     ...NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN...
-    >sta_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam_Bsta
+    >Barbuscula_Bsta
     ...AGGAATGAACCAGCTTACGAGGAGCCTAGCTACCGAGTGGGCCCAGGACAAGA...
-    >sta_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam_Bsyl
+    >Barbuscula_Bsyl
     ...NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN...
 
 and produces a consensus line such as:
 
-    >B.stacei_map_Bd_Bs_Bsyl_no_contigs.sorted.q30
+    >Barbuscula_consensus
     ...AGGAATGAACCAGCTTACGAGGAGCCTAGCTACCGAGTGGGCCCAGGACAAGA...
 
