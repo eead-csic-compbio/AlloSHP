@@ -41,16 +41,16 @@ which have the following chromosome name prefixes, respectively: __Bd__, __Chr__
 
 ### 2.1) Read mapping and merging to produce a single non-redundant VCF file
  
-<!-- Explicar los mapeos con BWA mem o Hisat2, segun sea
-
-Explicar que habra muestras con depth of coverage mas limitada y otras mejores,
-aparte de otras que se pueden definir como outgroups para los arboles poesteriores
- -->
-
 This process is summarized in the next flowchart:
 ![merge flowchart](./pics/FASTQ2VCF.png)
 
+<!-- Explicar los mapeos con BWA mem o Hisat2, segun sea 
+Explicar que habra muestras con depth of coverage mas limitada y otras mejores,
+aparte de otras que se pueden definir como outgroups para los arboles poesteriores -->
+
 <!-- Explicar los comandos para ir desde los multiples SAM a un solo VCF --> 
+
+After the merged VCF is produced it is necessary to remove redundant lines, usually gaps:
 
 ```{shell ,eval=FALSE}
 utils/rm_double_lines.pl RNAseq_Bd5_Chr10_chr10.raw.vcf > sample_data/RNAseq_Bd5_Chr10_chr10.vcf
