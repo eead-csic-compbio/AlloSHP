@@ -186,7 +186,7 @@ while(<VCF>)
       } 
 
       my (@sequence);
-      my %nts = ( $rawdata[3] => 1 ); # adds ref base call
+      my %nts; # = ( $rawdata[3] => 1 ); # adds ref base call
       $sample=$depthcover=$missing=$badSNP=0;
       ($genomic_samples,$gbs_samples) = (0,0);
       foreach $idx ( $COLUMNFIRSTSAMPLE .. $lastsampleidx )
