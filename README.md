@@ -53,8 +53,8 @@ aparte de otras que se pueden definir como outgroups para los arboles poesterior
 After the merged VCF is produced it is necessary to remove redundant lines, usually gaps:
 
 ```{shell ,eval=FALSE}
-utils/rm_double_lines.pl RNAseq_Bd5_Chr10_chr10.raw.vcf > sample_data/RNAseq_Bd5_Chr10_chr10.vcf
-bzip2 sample_data/RNAseq_Bd5_Chr10_chr10.vcf
+utils/rm_double_lines.pl RNAseq_Bd5_Chr10_chr9_raw.vcf > sample_data/RNAseq_Bd5_Chr10_chr9_reduced.vcf
+bzip2 sample_data/RNAseq_Bd5_Chr10_chr9_reduced.vcf
 ```
 
 ### 2.2) Producing a multiple alignment file
@@ -73,23 +73,23 @@ By default, the produced alignment is in FASTA format. Note that a logfile is al
 which contains a list of valid loci and several statistics. 
 In our tests, we found that $ONLYPOLYMORPHIC=0 worked well with RNAseq data:
 ```{shell}
-./vcf2alignment.pl sample_data/RNAseq_Bd5_Chr10_chr10.vcf.bz2 \
-  sample_data/RNAseq_Bd5_Chr10_chr10.fna &> sample_data/RNAseq_Bd5_Chr10_chr10.log 
+./vcf2alignment.pl sample_data/RNAseq_Bd5_Chr10_chr9_reduced.vcf.bz2 \
+  sample_data/RNAseq_Bd5_Chr10_chr9.fna &> sample_data/RNAseq_Bd5_Chr10_chr9.log 
 ```
 
 If the format is changed in the source to 'phylip', 
 an [interleaved PHYLIP](http://evolution.genetics.washington.edu/phylip/doc/sequence.html) 
 file is produced, with names shortened to 10 chars (see source code to choose from prefixes or suffixes):
 ```{shell}
-./vcf2alignment.pl sample_data/RNAseq_Bd5_Chr10_chr10.vcf.bz2 \
-  sample_data/RNAseq_Bd5_Chr10_chr10.phy &> sample_data/RNAseq_Bd5_Chr10_chr10.log
+./vcf2alignment.pl sample_data/RNAseq_Bd5_Chr10_chr9_reduced.vcf.bz2 \
+  sample_data/RNAseq_Bd5_Chr10_chr9.phy &> sample_data/RNAseq_Bd5_Chr10_chr9.log
 ```
 
 As mentioned, [NEXUS](https://en.wikipedia.org/wiki/Nexus_file) alignments can also be produced 
 by editing the source to 'nexus':
 ```{shell}
-./vcf2alignment.pl sample_data/RNAseq_Bd5_Chr10_chr10.vcf.bz2 \
-  sample_data/RNAseq_Bd5_Chr10_chr10.nex &> sample_data/RNAseq_Bd5_Chr10_chr10.log
+./vcf2alignment.pl sample_data/RNAseq_Bd5_Chr10_chr9_reduced.vcf.bz2 \
+  sample_data/RNAseq_Bd5_Chr10_chr9.nex &> sample_data/RNAseq_Bd5_Chr10_chr9.log
 ```
 
 The produced multiple alignment should be rendered with appropriate software for visual quality check:
@@ -162,13 +162,13 @@ gzip Bdistachyon.Bsylvaticum.coords.tsv
 
 A few more operations in the terminal are required to produce the final files, which are provided in [sample_data](./sample_data/):
 ```{shell, eval=FALSE}
-grep "valid locus" RNAseq_Bd5_Chr10_chr10.log | grep -v -P "Bd\d+" | grep chr | \
+grep "valid locus" RNAseq_Bd5_Chr10_chr9.log | grep -v -P "Bd\d+" | grep chr | \
 perl -lne 'if(/(chr\d+)_(\d+)/){ printf("%s.%d\n",$1,$2-1) }' | sort | uniq > list_Bsylvaticum_SNPs.coords
 
-grep "valid locus" RNAseq_Bd5_Chr10_chr10.log | grep -v -P "Bd\d+" | grep Chr | \
+grep "valid locus" RNAseq_Bd5_Chr10_chr9.log | grep -v -P "Bd\d+" | grep Chr | \
 perl -lne 'if(/(Chr\d+)_(\d+)/){ printf("%s.%d\n",$1,$2-1) }' | sort | uniq > list_Bstacei_SNPs.coords
 
-grep "valid locus" RNAseq_Bd5_Chr10_chr10.log | \
+grep "valid locus" RNAseq_Bd5_Chr10_chr9.log | \
 perl -lne 'if(/(Bd\d+)_(\d+)/){ printf("%s\t%d\n",$1,$2-1) }' | sort -k1,1 -k2,2n | uniq > list_Bdistachyon_SNPs.coords
 
 join -o "1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8" -1 5 -2 1 <(zcat Bdistachyon.Bstacei.coords.tsv.gz | \
@@ -187,8 +187,8 @@ Now we call script [vcf2alignment_synteny.pl](./vcf2alignment_synteny.pl) to out
 Note that now the alignment splits each sample in as many subgenomes as references were concatenated.
 As mentioned earlier, in our tests we found that $ONLYPOLYMORPHIC=0 worked well with RNAseq data:
 ```{shell}
-./vcf2alignment_synteny.pl sample_data/RNAseq_Bd5_Chr10_chr10.vcf.bz2 \
-  sample_data/RNAseq_Bd5_Chr10_chr10_synteny.fna &> sample_data/RNAseq_Bd5_Chr10_chr10_synteny.log
+./vcf2alignment_synteny.pl sample_data/RNAseq_Bd5_Chr10_chr9_reduced.vcf.bz2 \
+  sample_data/RNAseq_Bd5_Chr10_chr9_synteny.fna &> sample_data/RNAseq_Bd5_Chr10_chr9_synteny.log
 ```
 
 The resulting multiple alignment now has as many lines per sample as concatenated references, 
