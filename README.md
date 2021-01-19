@@ -71,7 +71,7 @@ in the source code (with a text editor) to change the expected outcome:
 
 By default, the produced alignment is in FASTA format. Note that a logfile is also saved in this example,
 which contains a list of valid loci and several statistics. 
-In our tests, we found that $ONLYPOLYMORPHIC=0 worked well with RNAseq data:
+In our tests, we found that $ONLYPOLYMORPHIC=0 worked well with RNA-seq data:
 ```{shell}
 ./vcf2alignment.pl sample_data/RNAseq_Bd5_Chr10_chr9_reduced.vcf.bz2 \
   sample_data/RNAseq_Bd5_Chr10_chr9.fna &> sample_data/RNAseq_Bd5_Chr10_chr9.log 
