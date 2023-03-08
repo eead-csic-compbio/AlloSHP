@@ -7,11 +7,6 @@ use Getopt::Std;
 # multiple sequence alignment in several supported formats 
 # (check @validformats below)
 
-# Input: 
-# i) VCF file with reads mapped to concatenated reference genomes, possibly compressed.
-# ii) TSV config file, see example lines below
-# iii) output filename
-#
 # Note: Chromosome names of genomes in VCF file must be different.
 
 # Bruno Contreras, Ruben Sancho EEAD-CSIC 2017-2023
