@@ -13,9 +13,10 @@ use FindBin '$Bin';
 
 # Bruno Contreras Moreira, Ruben Sancho EEAD-CSIC 2024
 
-# external binaries assumed to be available, edit if not 
+# external binaries assumed to be available, edit if non-standard locations
 my $GZIPEXE  = 'gzip'; 
 my $BZIP2EXE = 'bzip2';
+my $GNUPLOTEXE = 'gnuplot';
 
 my %opts;
 my ($fileA,$fileB,$minlenMb) = ('', '', 1.0);
