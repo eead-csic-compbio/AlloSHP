@@ -1,0 +1,147 @@
+#!/usr/bin/perl -w
+use strict;
+use warnings;
+use Getopt::Std;
+use File::Basename;
+use FindBin '$Bin';
+
+# Takes two genome assemblies (A & B) in FASTA format and computes a Whole-Genome Alignment (WGA). 
+# Returns:
+# 1) TSV file matching coordinates from A to B 
+# 2) LOG file (text) with WGA stats
+# 3) PDF file with dotplot of WGA for quality control
+
+# Bruno Contreras Moreira, Ruben Sancho EEAD-CSIC 2024
+
+# external binaries assumed to be available, edit if not 
+my $GZIPEXE  = 'gzip'; 
+my $BZIP2EXE = 'bzip2';
+
+my %opts;
+my ($fileA,$fileB,$minlenMb) = ('', '', 1.0);
+my ($softmask, $WGA_params) = (1, '-X12000');
+my ($root,$outTSVfile,$outLOGfile,$outPDFfile);
+
+getopts('hmp:l:A:B:', \%opts);
+
+if(($opts{'h'})||(scalar(keys(%opts))==0))
+{
+  print "\nusage: $0 [options]\n\n";
+  print "-h this message\n";
+  print "-A FASTA file of genome A             (example: -A speciesA.fna[.gz])\n";
+  print "-B FASTA file of genome B             (example: -B speciesB.fna[.gz])\n";
+  print "-l min contig length [Mb]             (optional, default: -l 1)\n";
+  print "-m FASTA files already soft-masked    (optional, default: masked with Red\n";
+  print "-p parameters for WGA Cgaln algorithm (optional, default: -p '$WGA_params')\n";
+  exit(0);
+}
+
+if(!defined($opts{'A'})) {
+  die "# ERROR: need FASTA file of genome A (-A)\n";
+} else {
+  $fileA = $opts{'A'}
+}
+
+if(!defined($opts{'B'})) {
+  die "# ERROR: need FASTA file of genome B (-B)\n";
+} else {
+  $fileB = $opts{'B'}
+}
+
+$root = basename($fileA) .'.'. basename($fileA) . $WGA_params;
+$outTSVfile = $root . '.tsv';
+$outLOGfile = $root . '.log';
+$outPDFfile = $root . '.pdf';
+
+if(defined($opts{'l'}) && $opts{'l'} >= 0) {
+  $minlenMb = $opts{'l'}
+}
+
+if(defined($opts{'m'})) {
+  $softmask = 0
+}
+
+if(defined($opts{'p'})) {
+  $WGA_params = $opts{'p'}
+}
+
+warn "# $0 -A $fileA -B $fileB -l $minlenMb -m $softmask -p $WGA_params\n\n";
+
+######################################################
+
+# 1) foreach FASTA file call sub to parse and filter sequences, take returned temp file from now on
+my $filtA = filter_FASTA_sequences( $fileA, $minlenMb, $GZIPEXE, $BZIP2EXE );
+
+
+# 2) mask filtered FASTA files if required
+
+# 3) compute WGA
+
+#/Cgaln/maketable Bstacei_2.1.softmasked.bedtools.vcf2alignment.fna
+#/Cgaln/maketable Bdistachyon_556_v3.0.softmasked.vcf2alignment.fna
+#/Cgaln/Cgaln Bdistachyon_556_v3.0.softmasked.vcf2alignment.fna Bstacei_2.1.softmasked.bedtools.vcf2alignment.fna -o Bdistachyon.Bstacei2.1.cgaln.fna -r -X12000 -fc -cons -otype2 &
+#/Cgaln/Cgaln Bdistachyon_556_v3.0.softmasked.vcf2alignment.fna Bstacei_2.1.softmasked.bedtools.vcf2alignment.fna -o Bdistachyon.Bstacei2.1.cgaln.dot -r -X12000 -fc -cons
+
+
+# 4) produce dotplot in PDF format (require make install)
+
+#gnuplot
+#gnuplot> plot "Bdistachyon.Bstacei2.1.cgaln.dot" with lines
+## Convert to png or pdf
+#gnuplot
+#set terminal pdf
+#set output "Bdistachyon.Bstacei2.1.cgaln.pdf"
+#plot "Bdistachyon.Bstacei2.1.cgaln.dot" with lines
+#unset output
+
+
+
+## MAPCOORDS (script in: /home/rsancho/01_vcf2alligment_2023_24/00_vcf2aligment_codes_and_test/vcf2alignment/utils/mapcoords.pl
+#nohup /home/rsancho/01_vcf2alligment_2023_24/00_vcf2aligment_codes_and_test/vcf2alignment/utils/mapcoords.pl \
+#Bdistachyon.Bstacei2.1.cgaln.fna.gz \
+#Bdistachyon_556_v3.0.softmasked.vcf2alignment.fna \
+#Bstacei_2.1.softmasked.bedtools.vcf2alignment.fna \
+# > Bdistachyon.Bstacei2.1.coords.tsv 2> Bdistachyon.Bstacei2.1.coords.log &
+
+
+
+
+
+sub filter_FASTA_sequences {
+  
+  my ( $infile, $min_length_Mb, $gzipexe, $bzip2exe ) = @_;
+
+  my (%FASTA,$magic,$name,$seq,$length);
+  my ($n_of_sequences, $n_filtered_sequences) = (0, 0);
+
+  # check input file format and open it accordingly
+  open(INFILE,$infile) || die "# filter_FASTA_sequences: cannot read $infile, exit\n";
+  sysread(INFILE,$magic,2);
+  close(INFILE);
+
+  if($infile =~ /\.gz$/ || $magic eq "\x1f\x8b") # GZIP compressed input
+  {
+    if(!open(FASTA,"$gzipexe -dc $infile |"))
+    {
+      die "# filter_FASTA_sequences: cannot read GZIP compressed $infile $!\n"
+        ."# please check gzip is installed\n";
+    }
+  }
+  elsif($infile =~ /\.bz2$/ || $magic eq "BZ") # BZIP2 compressed input
+  {
+    if(!open(FASTA,"$bzip2exe -dc $infile |"))
+    {
+      die "# filter_FASTA_sequences: cannot read BZIP2 compressed $infile $!\n"
+        ."# please check bzip2 is installed\n";
+    }
+  }
+  else{ open(FASTA,"<$infile") || die "# filter_FASTA_sequences: cannot read $infile $!\n"; }
+
+  while(<FASTA>) {
+
+  }
+
+  close(FASTA);
+
+  #return tempfile : file  . filt.fna
+}
