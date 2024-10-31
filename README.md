@@ -219,3 +219,13 @@ and produces a consensus line such as:
     >Barbuscula_consensus
     ...AGGAATGAACCAGCTTACGAGGAGCCTAGCTACCGAGTGGGCCCAGGACAAGA...
 
+
+## 4) Citation
+
+(main)
+
+Nakato R, Gotoh O (2010) Cgaln: fast and space-efficient whole-genome alignment. BMC Bioinformatics 11:224. https://doi.org/10.1186/1471-2105-11-224
+
+Girgis HZ (2015) Red: an intelligent, rapid, accurate tool for detecting repeats de-novo on the genomic scale. BMC Bioinformatics 16:227. https://doi.org/10.1186/s12859-015-0654-5
+
+Contreras-Moreira B, Filippi CV, Naamati G, García Girón C, Allen JE, Flicek P (2021) Efficient masking of plant genomes by combining kmer counting and curated repeats Genomics. Plant Genome https://doi.org/10.1002/tpg2.20143 
