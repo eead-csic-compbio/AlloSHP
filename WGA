@@ -21,6 +21,7 @@ my $BZIP2EXE   = 'bzip2';
 my $GNUPLOTEXE = "gnuplot";
 
 # binaries that should be installed with make 
+my $GSALIGNEXE = "$Bin/lib/GSAlign/bin/GSAlign";
 my $CGALNEXE   = "$Bin/lib/Cgaln/Cgaln";
 my $CINDEXEXE  = "$Bin/lib/Cgaln/maketable";
 my $REDEXE     = "$Bin/lib/Red/bin/Red";
@@ -55,12 +56,13 @@ if(defined($opts{'c'})) {
 
   #print "\nPrimary citation:\n \n";
   print "\nThis software uses external algorithms, please cite them accordingly:\n";
+  print " GSAlign https://doi.org/10.1186/s12864-020-6569-1\n";
   print " Cgaln https://doi.org/10.1186/1471-2105-11-224\n";
   print " Red https://doi.org/10.1186/s12859-015-0654-5\n";
   print " Red2Ensembl https://doi.org/10.1002/tpg2.20143\n\n";
 
   # check all required binaries and print diagnostic info
-  foreach my $exe ($CGALNEXE, $REDEXE, $RED2ENS, $MAPCOORDS) { 
+  foreach my $exe ($GSALIGNEXE, $CGALNEXE, $REDEXE, $RED2ENS, $MAPCOORDS) { 
     if(`$exe -h 2>&1` !~ /usage/i && `$exe -h 2>&1` !~ /input/i) { 
       print "# ERROR: $exe not correctly installed; please run 'make'\n";
     }

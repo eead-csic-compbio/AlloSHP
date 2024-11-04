@@ -1,8 +1,5 @@
 
-minimap2release = 2.24
-
-install: install_Red install_Red2Ensembl install_Cgaln
-	#-sudo apt install -y git wget
+install: install_Red install_Red2Ensembl install_Cgaln install_gsalign
 
 install_Red:
 	if [ ! -d "lib/Red" ]; then \
@@ -21,18 +18,16 @@ install_Cgaln:
 		cd lib && git clone https://github.com/rnakato/Cgaln.git && cd Cgaln && make && rm -f *.fasta *.o; \
 	fi
 
-# X11 GUI does not work
-install_gnuplot:
-	if [ ! -d "lib/gnuplot-5.2.8" ]; then \
-		cd lib && wget https://unlimited.dl.sourceforge.net/project/gnuplot/gnuplot/5.2.8/gnuplot-5.2.8.tar.gz && \
-			tar xfz gnuplot-5.2.8.tar.gz && cd gnuplot-5.2.8 && ./configure with_latex=no && make && \
-			rm -rf demo docs && rm -f src/*.o && cd .. && rm -f gnuplot-5.2.8.tar.gz; \
-        fi
-
-# optional, tests
-install_minimap2:
-	if [ ! -d "lib/minimap2" ]; then \
-		cd lib && wget https://github.com/lh3/minimap2/releases/download/v${minimap2release}/minimap2-${minimap2release}.tar.bz2 && \
-			tar xfj minimap2-${minimap2release}.tar.bz2 && cd minimap2-${minimap2release} && make && cd .. && \
-			rm -f minimap2-${minimap2release}.tar.bz2 && ln -fs minimap2-${minimap2release} minimap2; \
+install_gsalign:
+	if [ ! -d "lib/GSAlign" ]; then \
+		cd lib && git clone https://github.com/hsinnan75/GSAlign.git && cd GSAlign && make & rm -rf test; \
 	fi
+
+#cannot cope with raw barley chromosomes, see https://doi.org/10.1186/s13059-023-03071-z
+#minimap2release = 2.24
+#install_minimap2:
+#	if [ ! -d "lib/minimap2" ]; then \
+#		cd lib && wget https://github.com/lh3/minimap2/releases/download/v${minimap2release}/minimap2-${minimap2release}.tar.bz2 && \
+#			tar xfj minimap2-${minimap2release}.tar.bz2 && cd minimap2-${minimap2release} && make && cd .. && \
+#			rm -f minimap2-${minimap2release}.tar.bz2 && ln -fs minimap2-${minimap2release} minimap2; \
+#	fi
