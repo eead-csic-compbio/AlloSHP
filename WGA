@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl 
 use strict;
 use warnings;
 use Getopt::Std;
@@ -39,7 +39,7 @@ if(($opts{'h'})||(scalar(keys(%opts))==0))
   print "-l min contig length [Mb]             (optional, default: -l 1)\n";
   print "-m FASTA files already soft-masked    (optional, default: masked with Red\n";
   print "-p parameters for WGA Cgaln algorithm (optional, default: -p '$WGA_params')\n";
-  print "-c print credits and checks install\n";
+  print "-c print credits and checks install   (recommended)\n";
   exit(0);
 }
 
@@ -95,11 +95,13 @@ warn "# $0 -A $fileA -B $fileB -l $minlenMb -m $softmask -p $WGA_params\n\n";
 
 ######################################################
 
-# 1) foreach FASTA file call sub to parse and filter sequences, take returned temp file from now on
+# 1) foreach FASTA file filter out short sequences, take returned temp file
 my $filtA = filter_FASTA_sequences( $fileA, $minlenMb, $GZIPEXE, $BZIP2EXE );
-
+my $filtB = filter_FASTA_sequences( $fileB, $minlenMb, $GZIPEXE, $BZIP2EXE );
 
 # 2) mask filtered FASTA files if required
+
+
 
 # 3) compute WGA
 
@@ -117,11 +119,6 @@ my $filtA = filter_FASTA_sequences( $fileA, $minlenMb, $GZIPEXE, $BZIP2EXE );
 
 # 4) produce dotplot in PDF format (require make install)
 
-# warn if gnuplot not available
-system("$GNUPLOTEXE -h");
-if($? != 0) {
-  die "# EXIT: cannot produce PDF of dotplot, please install gnuplot in your system (ie \$ sudo apt install gnuplot)\n";
-}
 
 #
 # gnuplot -h
@@ -149,12 +146,18 @@ if($? != 0) {
 
 
 
-
+# Takes 4 params:
+# i)   path to FASTA file  (string)
+# ii)  min sequence length (float, in Mb)
+# iii) path to GZIP executable
+# iv)  path to BZIP2 executable
+# Returns:
+# i) path to FASTA file with long sequences
 sub filter_FASTA_sequences {
   
   my ( $infile, $min_length_Mb, $gzipexe, $bzip2exe ) = @_;
 
-  my (%FASTA,$magic,$name,$seq,$length);
+  my (%FASTA,@ids,$magic,$root,$name,$seq,$seqid,$length);
   my ($n_of_sequences, $n_filtered_sequences) = (0, 0);
 
   # check input file format and open it accordingly
@@ -168,6 +171,10 @@ sub filter_FASTA_sequences {
     {
       die "# filter_FASTA_sequences: cannot read GZIP compressed $infile $!\n"
         ."# please check gzip is installed\n";
+
+    } else {
+      $root = $infile;
+      $root =~ s/\.gz//;      
     }
   }
   elsif($infile =~ /\.bz2$/ || $magic eq "BZ") # BZIP2 compressed input
@@ -176,15 +183,51 @@ sub filter_FASTA_sequences {
     {
       die "# filter_FASTA_sequences: cannot read BZIP2 compressed $infile $!\n"
         ."# please check bzip2 is installed\n";
+
+    } else {
+      $root = $infile;
+      $root =~ s/\.bz2//;                 
     }
   }
-  else{ open(FASTA,"<$infile") || die "# filter_FASTA_sequences: cannot read $infile $!\n"; }
+  else { 
+    open(FASTA,"<$infile") || die "# filter_FASTA_sequences: cannot read $infile $!\n"; 
+    $root = $infile;
+  }
 
   while(<FASTA>) {
+    if(/^\>(\S+)/) {
+      $name = $1;
+      $n_of_sequences++;
+      $seqid = $n_of_sequences;
+      $FASTA{$seqid}{'NAME'} = $name;
+      push(@ids,$seqid);
 
+    } else {
+      s/[\s|\n]//g;
+      $FASTA{$seqid}{'SEQ'} .= $_;
+    }
   }
 
   close(FASTA);
 
-  #return tempfile : file  . filt.fna
+  # create file with long sequences 
+  my $filtfile = $root . '.filt';
+  open(FILT,">",$filtfile) || die "# filter_FASTA_sequences: cannot create $filtfile $!\n";
+
+  foreach $seqid (@ids) {
+
+    $length = length($FASTA{$seqid}{'SEQ'});
+
+    if($length >= $min_length_Mb * 1_000_000) { 
+      print "# filter_FASTA_sequences: [passed $length bp] $FASTA{$seqid}{'NAME'}\n";
+      print FILT ">$FASTA{$seqid}{'NAME'}\n$FASTA{$seqid}{'SEQ'}\n";
+
+    } else {
+      print "# filter_FASTA_sequences: [skipped $length bp] $FASTA{$seqid}{'NAME'}\n";
+    }
+  }
+
+  close(FILT);
+
+  return $filtfile
 }
