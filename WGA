@@ -6,7 +6,8 @@ use File::Basename;
 use FindBin '$Bin';
 use File::Temp qw/ tempdir /;
 
-# Takes two genome assemblies (A & B) in FASTA format and computes a Whole-Genome Alignment (WGA). 
+# Takes two genome assemblies (A & B) in FASTA format and computes a Whole-Genome Alignment (WGA).
+# By default uses Cgaln for the alignments, which is single-threaded. 
 # Returns:
 # 1) TSV file matching coordinates from A to B 
 # 2) LOG file (text) with WGA stats
@@ -174,6 +175,10 @@ $cmd = "$CGALNEXE $maskA $maskB -o $WGAfile $WGA_Cgaln_params -r -fc -cons -otyp
 system("$cmd");
 if($? != 0) {
   die "# EXIT: failed while aligning ($cmd)\n";
+
+} else {
+  system("gzip $WGAfile");
+  $WGAfile .= '.gz';  
 }
 
 $cmd = "$CGALNEXE $maskA $maskB -o $WGAdotfile $WGA_Cgaln_params -r -fc -cons -otype0";
