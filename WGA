@@ -179,7 +179,7 @@ if($? != 0) {
   die "# EXIT: failed while aligning ($cmd)\n";
 
 } else {
-  system("gzip $WGAfile");
+  system("gzip -f $WGAfile");
   $WGAfile .= '.gz';  
 }
 
