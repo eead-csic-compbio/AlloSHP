@@ -157,7 +157,7 @@ if($softmask == 1) {
 print "\n## indexing masked, filtered sequences\n\n";
 
 # 3.0) clean previous temp folder
-system("rm -rf CgalnTable");
+#system("rm -rf CgalnTable");
 
 # 3.1) compute indexes of filtered sequences
 $cmd = "$CINDEXEXE $WGA_index_params $maskA";
