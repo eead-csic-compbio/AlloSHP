@@ -218,7 +218,7 @@ system("$cmd");
 if($? != 0) {
   warn "# WARNING: failed while exporting dotplot to PDF ($cmd)\n\n";
 
-  warn "# Inspection of dotplot is highly recommended to validate WGS parameters.\n";
+  warn "# Inspection of dotplot is highly recommended to validate WGA and parameters.\n";
   warn "# Please install gnuplot ie \$ sudo apt install gnuplot\n\n";
   $outPDFfile = "(failed, need to install gnuplot)\n"; 
 }
