@@ -12,7 +12,8 @@ install_Red:
 
 install_Red2Ensembl:
 	if [ ! -e "utils/Red2Ensembl.py" ]; then \
-		cd utils && wget https://raw.githubusercontent.com/Ensembl/plant-scripts/refs/heads/master/repeats/Red2Ensembl.py; \
+		cd utils && wget https://raw.githubusercontent.com/Ensembl/plant-scripts/refs/heads/master/repeats/Red2Ensembl.py && \
+			chmod +x Red2Ensembl.py; \
 	fi
 
 install_Cgaln:
