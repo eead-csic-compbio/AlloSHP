@@ -4,6 +4,7 @@ use warnings;
 use Getopt::Std;
 use File::Basename;
 use FindBin '$Bin';
+use File::Temp qw/ tempdir /;
 
 # Takes two genome assemblies (A & B) in FASTA format and computes a Whole-Genome Alignment (WGA). 
 # Returns:
@@ -14,21 +15,25 @@ use FindBin '$Bin';
 # Bruno Contreras Moreira, Ruben Sancho EEAD-CSIC 2024
 
 # external binaries assumed to be available, edit if non-standard locations
-my $GZIPEXE  = 'gzip'; 
-my $BZIP2EXE = 'bzip2';
+my $GZIPEXE    = 'gzip'; 
+my $BZIP2EXE   = 'bzip2';
+my $GNUPLOTEXE = "gnuplot";
 
 # binaries that should be installed with make 
-my $GNUPLOTEXE = "$Bin/lib/gnuplot-5.2.8/src/gnuplot";
 my $CGALNEXE   = "$Bin/lib/Cgaln/Cgaln";
+my $CINDEXEXE  = "$Bin/lib/Cgaln/maketable";
 my $REDEXE     = "$Bin/lib/Red/bin/Red";
 my $RED2ENS    = "$Bin/utils/Red2Ensembl.py";
+my $MAPCOORDS  = "$Bin/utils/mapcoords.pl";
 
 my %opts;
-my ($fileA, $fileB, $minlenMb) = ('', '', 1.0);
-my ($softmask, $WGA_params) = (1, '-X12000');
-my ($root, $outTSVfile, $outLOGfile, $outPDFfile);
+my ($fileA, $fileB, $minlenMb, $ncores, $softmask) = ('', '', 1.0, 4, 1);
+my ($WGA_Cgaln_params, $WGA_index_params) = ('-X12000', '-K11 -BS10000');
+my ($root, $cmd, $tempdirA, $tempdirB);
+my ($WGAfile, $WGAdotfile, $WGAscriptfile);
+my ($outTSVfile, $outLOGfile, $outPDFfile);
 
-getopts('hcmp:l:A:B:', \%opts);
+getopts('hcmn:I:C:l:A:B:', \%opts);
 
 if(($opts{'h'})||(scalar(keys(%opts))==0))
 {
@@ -36,9 +41,11 @@ if(($opts{'h'})||(scalar(keys(%opts))==0))
   print "-h this message\n";
   print "-A FASTA file of genome A             (example: -A speciesA.fna[.gz])\n";
   print "-B FASTA file of genome B             (example: -B speciesB.fna[.gz])\n";
-  print "-l min contig length [Mb]             (optional, default: -l 1)\n";
+  print "-l min contig length [Mbp]            (optional, default: -l $minlenMb)\n";
   print "-m FASTA files already soft-masked    (optional, default: masked with Red\n";
-  print "-p parameters for WGA Cgaln algorithm (optional, default: -p '$WGA_params')\n";
+  print "-n number of cores while masking      (optional, default: $ncores\n";
+  print "-C parameters for Cgaln aligner       (optional, default: -C '$WGA_Cgaln_params')\n";
+  print "-I parameters for Cgaln indexer       (optional, default: -I '$WGA_index_params')\n";
   print "-c print credits and checks install   (recommended)\n";
   exit(0);
 }
@@ -49,11 +56,10 @@ if(defined($opts{'c'})) {
   print "\nThis software uses external algorithms, please cite them accordingly:\n";
   print " Cgaln https://doi.org/10.1186/1471-2105-11-224\n";
   print " Red https://doi.org/10.1186/s12859-015-0654-5\n";
-  print " Red2Ensembl.py https://doi.org/10.1002/tpg2.20143\n";
-  print " gnuplot http://www.gnuplot.info\n";
+  print " Red2Ensembl https://doi.org/10.1002/tpg2.20143\n\n";
 
   # check all binaries needed by this program and print diagnostic info
-  foreach my $exe ($GNUPLOTEXE, $CGALNEXE, $REDEXE) { 
+  foreach my $exe ($CGALNEXE, $REDEXE, $RED2ENS, $MAPCOORDS) { 
     if(`$exe -h 2>&1` !~ /usage/i && `$exe -h 2>&1` !~ /input/i) { 
       print "# ERROR: $exe not correctly installed; please run 'make'\n";
     }
@@ -74,24 +80,31 @@ if(!defined($opts{'B'})) {
   $fileB = $opts{'B'}
 }
 
-$root = basename($fileA) .'.'. basename($fileA) . $WGA_params;
-$outTSVfile = $root . '.tsv';
-$outLOGfile = $root . '.log';
-$outPDFfile = $root . '.pdf';
-
-if(defined($opts{'l'}) && $opts{'l'} >= 0) {
+if(defined($opts{'l'}) && $opts{'l'} >= 0 && $opts{'l'} < 1000) {
   $minlenMb = $opts{'l'}
+}
+
+if(defined($opts{'n'}) && $opts{'n'} >= 0) {
+  $ncores = $opts{'n'}
 }
 
 if(defined($opts{'m'})) {
   $softmask = 0
 }
 
-if(defined($opts{'p'})) {
-  $WGA_params = $opts{'p'}
+if(defined($opts{'I'})) {
+  $WGA_index_params = $opts{'I'}
 }
 
-warn "# $0 -A $fileA -B $fileB -l $minlenMb -m $softmask -p $WGA_params\n\n";
+if(defined($opts{'C'})) {
+  $WGA_Cgaln_params = $opts{'C'}
+}
+
+$root = basename($fileA) .'.'. basename($fileA) . $WGA_index_params . '_' . $WGA_Cgaln_params;
+$root =~ s/\s+/_/g;
+
+warn "## $0 -A $fileA -B $fileB -l $minlenMb -m $softmask -I $WGA_index_params -C $WGA_Cgaln_params -n $ncores\n\n";
+warn "## root: $root\n\n";
 
 ######################################################
 
@@ -100,55 +113,127 @@ my $filtA = filter_FASTA_sequences( $fileA, $minlenMb, $GZIPEXE, $BZIP2EXE );
 my $filtB = filter_FASTA_sequences( $fileB, $minlenMb, $GZIPEXE, $BZIP2EXE );
 
 # 2) mask filtered FASTA files if required
+my $maskA = $fileA . '.sm.fasta';     
+my $maskB = $fileB . '.sm.fasta';
+
+if($softmask == 1) {
+
+  print "\n## soft-masking filtered sequences\n\n";
+
+  if(!-s $maskA) {  
+    $tempdirA = tempdir( CLEANUP => 1 );
+    $cmd = "$RED2ENS --cor $ncores --msk_file $maskA $filtA $tempdirA";
+    system("$cmd");
+    if($? != 0) {
+      die "# EXIT: failed while soft-masking ($cmd)\n";
+    }
+  }
+
+  if(!-s $maskB) {
+    $tempdirB = tempdir( CLEANUP => 1 );
+    $cmd = "$RED2ENS --cor $ncores --msk_file $maskB $filtB $tempdirB";
+    system("$cmd");
+    if($? != 0) {
+      die "# EXIT: failed while soft-masking ($cmd)\n";
+    }
+  }
+
+} else {
+  $maskA = $filtA;
+  $maskB = $filtB;  
+}
+
+# 3) compute WGA, by default maketable & Cgaln are used, which create a folder named 'CgalnTable'
+
+print "\n## indexing masked, filtered sequences\n\n";
+
+# 3.0) clean previous files
+system("rm -rf CgalnTable");
+
+# 3.1) compute indexes of filtered sequences
+$cmd = "$CINDEXEXE $WGA_index_params $maskA";
+system("$cmd");
+if($? != 0) {
+  die "# EXIT: failed while indexing ($cmd)\n";
+}
+
+$cmd = "$CINDEXEXE $WGA_index_params $maskB";
+system("$cmd");
+if($? != 0) {
+  die "# EXIT: failed while indexing ($cmd)\n";
+}
+
+# 3.2) compute Whole Genome Alignments of indexed sequences
+
+print "\n## computing and plotting Whole Genome Alignment\n\n";
+
+$WGAfile    = $root . '.Cgaln.fasta';
+$WGAdotfile = $root . '.Cgaln.dot'; 
+
+$cmd = "$CGALNEXE $maskA $maskB -o $WGAfile $WGA_Cgaln_params -r -fc -cons -otype2";
+system("$cmd");
+if($? != 0) {
+  die "# EXIT: failed while aligning ($cmd)\n";
+}
+
+$cmd = "$CGALNEXE $maskA $maskB -o $WGAdotfile $WGA_Cgaln_params -r -fc -cons -otype0";
+system("$cmd");
+if($? != 0) {
+  die "# EXIT: failed while aligning ($cmd)\n";
+}
+
+# 3.3) export dotplot to PDF for visual inspection and parameter tweaking
+
+$WGAscriptfile = $root . '.Cgaln.dot.script';
+$outPDFfile    = $root . '.Cgaln.dot.pdf';
+
+open(SCRIPT,">",$WGAscriptfile) || die "# cannot create $WGAscriptfile $!\n";
+
+print SCRIPT<<"END"; 
+set terminal pdf
+set grid
+set output "$outPDFfile"
+plot "$WGAdotfile" with lines
+unset output
+exit
+END
+
+close(SCRIPT);
+
+$cmd = "$GNUPLOTEXE -c $WGAscriptfile";
+system("$cmd");
+if($? != 0) {
+  warn "# WARNING: failed while exporting dotplot to PDF ($cmd)\n";
+  warn "# WARNING: you need to install GNUPLOT ie \$ sudo apt install gnuplot\n\n";
+  $outPDFfile = "(failed, need to install GNUPLOT)\n"; 
+}
+
+# 3.4) convert WGA to TSV 
+
+print "\n## converting Whole Genome Alignment to TSV\n\n";
+
+$outTSVfile = $root . '.tsv';
+$outLOGfile = $root . '.coords.log';
+
+$cmd = "$MAPCOORDS $WGAfile $maskA $maskB > $outTSVfile 2> $outLOGfile";
+system("$cmd");
+if($? != 0) {
+  die "# EXIT: failed while converting to TSV ($cmd)\n";
+}
+
+print "## output files:\n\n";
+print "# TSV: $outTSVfile\n";
+print "# LOG: $outLOGfile\n";
+print "# PDF: $outPDFfile\n\n";
 
 
-
-# 3) compute WGA
-
-#/Cgaln/maketable Bstacei_2.1.softmasked.bedtools.vcf2alignment.fna
-#/Cgaln/maketable Bdistachyon_556_v3.0.softmasked.vcf2alignment.fna
-#/Cgaln/Cgaln Bdistachyon_556_v3.0.softmasked.vcf2alignment.fna Bstacei_2.1.softmasked.bedtools.vcf2alignment.fna -o Bdistachyon.Bstacei2.1.cgaln.fna -r -X12000 -fc -cons -otype2 &
-#/Cgaln/Cgaln Bdistachyon_556_v3.0.softmasked.vcf2alignment.fna Bstacei_2.1.softmasked.bedtools.vcf2alignment.fna -o Bdistachyon.Bstacei2.1.cgaln.dot -r -X12000 -fc -cons
-
-## MAPCOORDS (script in: /home/rsancho/01_vcf2alligment_2023_24/00_vcf2aligment_codes_and_test/vcf2alignment/utils/mapcoords.pl
-#nohup /home/rsancho/01_vcf2alligment_2023_24/00_vcf2aligment_codes_and_test/vcf2alignment/utils/mapcoords.pl \
-#Bdistachyon.Bstacei2.1.cgaln.fna.gz \
-#Bdistachyon_556_v3.0.softmasked.vcf2alignment.fna \
-#Bstacei_2.1.softmasked.bedtools.vcf2alignment.fna \
-# > Bdistachyon.Bstacei2.1.coords.tsv 2> Bdistachyon.Bstacei2.1.coords.log &
-
-# 4) produce dotplot in PDF format (require make install)
-
-
-#
-# gnuplot -h
-# Usage: gnuplot [OPTION] ... [FILE]
-#for X11 options see 'help X11->command-line-options'
-#  -V, --version
-#  -h, --help
-#  -p  --persist
-#  -s  --slow
-#  -d  --default-settings
-#  -c  scriptfile ARG1 ARG2 ... 
-#  -e  "command1; command2; ..."
-#gnuplot 5.2 patchlevel 8
-
-#
-#gnuplot
-#gnuplot> plot "Bdistachyon.Bstacei2.1.cgaln.dot" with lines
-## Convert to png or pdf
-#gnuplot
-#set terminal pdf
-#set output "Bdistachyon.Bstacei2.1.cgaln.pdf"
-#plot "Bdistachyon.Bstacei2.1.cgaln.dot" with lines
-#unset output
 
 
 
 
 # Takes 4 params:
 # i)   path to FASTA file  (string)
-# ii)  min sequence length (float, in Mb)
+# ii)  min sequence length (float, in Mbp)
 # iii) path to GZIP executable
 # iv)  path to BZIP2 executable
 # Returns:
@@ -165,10 +250,8 @@ sub filter_FASTA_sequences {
   sysread(INFILE,$magic,2);
   close(INFILE);
 
-  if($infile =~ /\.gz$/ || $magic eq "\x1f\x8b") # GZIP compressed input
-  {
-    if(!open(FASTA,"$gzipexe -dc $infile |"))
-    {
+  if($infile =~ /\.gz$/ || $magic eq "\x1f\x8b") {  # GZIP compressed input
+    if(!open(FASTA,"$gzipexe -dc $infile |")) {
       die "# filter_FASTA_sequences: cannot read GZIP compressed $infile $!\n"
         ."# please check gzip is installed\n";
 
@@ -177,10 +260,8 @@ sub filter_FASTA_sequences {
       $root =~ s/\.gz//;      
     }
   }
-  elsif($infile =~ /\.bz2$/ || $magic eq "BZ") # BZIP2 compressed input
-  {
-    if(!open(FASTA,"$bzip2exe -dc $infile |"))
-    {
+  elsif($infile =~ /\.bz2$/ || $magic eq "BZ") {   # BZIP2 compressed input
+    if(!open(FASTA,"$bzip2exe -dc $infile |")) {
       die "# filter_FASTA_sequences: cannot read BZIP2 compressed $infile $!\n"
         ."# please check bzip2 is installed\n";
 
@@ -211,7 +292,7 @@ sub filter_FASTA_sequences {
   close(FASTA);
 
   # create file with long sequences 
-  my $filtfile = $root . '.filt';
+  my $filtfile = $root . ".filt$min_length_Mb.fasta";
   open(FILT,">",$filtfile) || die "# filter_FASTA_sequences: cannot create $filtfile $!\n";
 
   foreach $seqid (@ids) {
