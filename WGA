@@ -144,11 +144,13 @@ if($softmask == 1) {
   $maskB = $filtB;  
 }
 
-# 3) compute WGA, by default maketable & Cgaln are used, which create a folder named 'CgalnTable'
+# 3) compute WGA
+#
+# by default maketable & Cgaln are used, which create temp folder named 'CgalnTable'
 
 print "\n## indexing masked, filtered sequences\n\n";
 
-# 3.0) clean previous files
+# 3.0) clean previous temp folder
 system("rm -rf CgalnTable");
 
 # 3.1) compute indexes of filtered sequences
