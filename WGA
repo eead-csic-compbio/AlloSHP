@@ -11,7 +11,7 @@ use File::Temp qw/ tempdir /;
 # Returns:
 # 1) TSV file matching coordinates from A to B 
 # 2) LOG file (text) with WGA stats
-# 3) PDF file with dotplot of WGA for quality control
+# 3) PDF file with dotplot of WGA for quality control [requires gnuplot in the system, not provided]
 
 # Bruno Contreras Moreira, Ruben Sancho EEAD-CSIC 2024
 
@@ -59,11 +59,17 @@ if(defined($opts{'c'})) {
   print " Red https://doi.org/10.1186/s12859-015-0654-5\n";
   print " Red2Ensembl https://doi.org/10.1002/tpg2.20143\n\n";
 
-  # check all binaries needed by this program and print diagnostic info
+  # check all required binaries and print diagnostic info
   foreach my $exe ($CGALNEXE, $REDEXE, $RED2ENS, $MAPCOORDS) { 
     if(`$exe -h 2>&1` !~ /usage/i && `$exe -h 2>&1` !~ /input/i) { 
       print "# ERROR: $exe not correctly installed; please run 'make'\n";
     }
+  }
+
+  # check also gnuplot, not provided
+  $cmd = `gnuplot -h 2>&1`; 
+  if(!$cmd || $cmd !~ /usage/i) {
+    print "# WARNING: gnuplot not found; please install it ie \$ sudo apt install gnuplot\n";
   }
 
   exit(0);
@@ -210,9 +216,11 @@ close(SCRIPT);
 $cmd = "$GNUPLOTEXE -c $WGAscriptfile";
 system("$cmd");
 if($? != 0) {
-  warn "# WARNING: failed while exporting dotplot to PDF ($cmd)\n";
-  warn "# WARNING: you need to install GNUPLOT ie \$ sudo apt install gnuplot\n\n";
-  $outPDFfile = "(failed, need to install GNUPLOT)\n"; 
+  warn "# WARNING: failed while exporting dotplot to PDF ($cmd)\n\n";
+
+  warn "# Inspection of dotplot is highly recommended to validate WGS parameters.\n";
+  warn "# Please install gnuplot ie \$ sudo apt install gnuplot\n\n";
+  $outPDFfile = "(failed, need to install gnuplot)\n"; 
 }
 
 # 3.4) convert WGA to TSV 
