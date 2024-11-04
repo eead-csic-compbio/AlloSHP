@@ -1,7 +1,7 @@
 
 minimap2release = 2.24
 
-install: install_Red install_Red2Ensembl install_Cgaln install_gnuplot
+install: install_Red install_Red2Ensembl install_Cgaln
 	#-sudo apt install -y git wget
 
 install_Red:
@@ -21,6 +21,7 @@ install_Cgaln:
 		cd lib && git clone https://github.com/rnakato/Cgaln.git && cd Cgaln && make && rm -f *.fasta *.o; \
 	fi
 
+# X11 GUI does not work
 install_gnuplot:
 	if [ ! -d "lib/gnuplot-5.2.8" ]; then \
 		cd lib && wget https://unlimited.dl.sourceforge.net/project/gnuplot/gnuplot/5.2.8/gnuplot-5.2.8.tar.gz && \
