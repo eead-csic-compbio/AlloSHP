@@ -16,14 +16,19 @@ use FindBin '$Bin';
 # external binaries assumed to be available, edit if non-standard locations
 my $GZIPEXE  = 'gzip'; 
 my $BZIP2EXE = 'bzip2';
-my $GNUPLOTEXE = 'gnuplot';
+
+# binaries that should be installed with make 
+my $GNUPLOTEXE = "$Bin/lib/gnuplot-5.2.8/src/gnuplot";
+my $CGALNEXE   = "$Bin/lib/Cgaln/Cgaln";
+my $REDEXE     = "$Bin/lib/Red/bin/Red";
+my $RED2ENS    = "$Bin/utils/Red2Ensembl.py";
 
 my %opts;
-my ($fileA,$fileB,$minlenMb) = ('', '', 1.0);
+my ($fileA, $fileB, $minlenMb) = ('', '', 1.0);
 my ($softmask, $WGA_params) = (1, '-X12000');
-my ($root,$outTSVfile,$outLOGfile,$outPDFfile);
+my ($root, $outTSVfile, $outLOGfile, $outPDFfile);
 
-getopts('hmp:l:A:B:', \%opts);
+getopts('hcmp:l:A:B:', \%opts);
 
 if(($opts{'h'})||(scalar(keys(%opts))==0))
 {
@@ -34,6 +39,26 @@ if(($opts{'h'})||(scalar(keys(%opts))==0))
   print "-l min contig length [Mb]             (optional, default: -l 1)\n";
   print "-m FASTA files already soft-masked    (optional, default: masked with Red\n";
   print "-p parameters for WGA Cgaln algorithm (optional, default: -p '$WGA_params')\n";
+  print "-c print credits and checks install\n";
+  exit(0);
+}
+
+if(defined($opts{'c'})) {
+
+  #print "\nPrimary citation:\n \n";
+  print "\nThis software uses external algorithms, please cite them accordingly:\n";
+  print " Cgaln https://doi.org/10.1186/1471-2105-11-224\n";
+  print " Red https://doi.org/10.1186/s12859-015-0654-5\n";
+  print " Red2Ensembl.py https://doi.org/10.1002/tpg2.20143\n";
+  print " gnuplot http://www.gnuplot.info\n";
+
+  # check all binaries needed by this program and print diagnostic info
+  foreach my $exe ($GNUPLOTEXE, $CGALNEXE, $REDEXE) { 
+    if(`$exe -h 2>&1` !~ /usage/i && `$exe -h 2>&1` !~ /input/i) { 
+      print "# ERROR: $exe not correctly installed; please run 'make'\n";
+    }
+  }
+
   exit(0);
 }
 
