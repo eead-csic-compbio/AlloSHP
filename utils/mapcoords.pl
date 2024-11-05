@@ -3,7 +3,7 @@ use strict;
 
 # parse CGaln whole-genome alignments of A & B species and 
 # produce a table of 0-based equivalent coordinates
-# B Contreras-Moreira, R Sancho EEAD-CSIC, Unizar, 2017
+# B Contreras-Moreira, R Sancho EEAD-CSIC, Unizar, 2017-2024
 
 # max ratio of mapped positions in other blocks 
 my $MAXMULTIBLOCKPOSITIONS = 0.25;
@@ -12,15 +12,17 @@ my $MAXMULTIBLOCKPOSITIONS = 0.25;
 my $MAXMULTIBdPOSITIONS = 0.05;
 
 my ($cgalnfile,$fastafileA,$fastafileB);
+my $notCgaln = 0;
 
-if(!$ARGV[2]){ die "# usage: $0 <CGaln file.gz> <A fasta file> <B fasta file>\n" }
-else{ ($cgalnfile,$fastafileA,$fastafileB) = @ARGV }
+if(!$ARGV[2]){ die "# usage: $0 <file.fasta.gz> <A fasta file> <B fasta file> <[boolean] not Cgaln>\n" }
+else{ ($cgalnfile,$fastafileA,$fastafileB,$notCgaln) = @ARGV }
 
 warn "# MAXMULTIBdPOSITIONS: $MAXMULTIBdPOSITIONS\n";
 warn "# MAXMULTIBLOCKPOSITIONS: $MAXMULTIBLOCKPOSITIONS\n";
 warn "# CGaln file: $cgalnfile\n";
 warn "# A FASTA file: $fastafileA\n";
 warn "# B FASTA file: $fastafileB\n";
+warn "# not Cgaln = $notCgaln\n\n";
 
 my ($strandA,$chrA,$chrB,$genomeid,$cumulscore);
 my ($startA,$endA,$startB,$endB,$posname,$blockid);
@@ -143,7 +145,10 @@ foreach $blockid (sort {$blocks{$b}{'cumulscore'}<=>$blocks{$a}{'cumulscore'} ||
 
     $realposB = $startB;
     if($strandA eq 'forward'){ $realposA = $startA }
-    else{ $realposA = $startA-2 } # a feature/bug of CGaln, see debug.txt Jan2017
+    else 
+    {
+      if($notCgaln == 0){ $realposA = $startA-2 } # a feature/bug of CGaln, see debug.txt Jan2017
+    }  
 
     for($pos=0;$pos<$length;$pos++)
     {
