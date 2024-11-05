@@ -7,7 +7,7 @@ use FindBin '$Bin';
 use File::Temp qw/ tempdir /;
 
 # Takes two genome assemblies (A & B) in FASTA format and computes a Whole-Genome Alignment (WGA).
-# By default uses Cgaln for the alignments, which is single-threaded. 
+# By default uses Cgaln for the alignments, which is single-threaded, . 
 # Returns:
 # 1) TSV file matching coordinates from A to B 
 # 2) LOG file (text) with WGA stats
@@ -26,29 +26,33 @@ my $CGALNEXE   = "$Bin/lib/Cgaln/Cgaln";
 my $CINDEXEXE  = "$Bin/lib/Cgaln/maketable";
 my $REDEXE     = "$Bin/lib/Red/bin/Red";
 my $RED2ENS    = "$Bin/utils/Red2Ensembl.py";
+my $ALN2FASTA  = "$Bin/utils/aln2fasta.pl";
 my $MAPCOORDS  = "$Bin/utils/mapcoords.pl";
 
 my %opts;
-my ($fileA, $fileB, $minlenMb, $ncores, $softmask) = ('', '', 1.0, 4, 1);
+my ($fileA, $fileB, $minlenMb, $ncores, $softmask, $use_gsalign) = ('', '', 1.0, 4, 1, 0);
 my ($WGA_Cgaln_params, $WGA_index_params) = ('-X12000', '-K11 -BS10000');
+my $WGA_GSAlign_params = '-no_vcf -one';
 my ($root, $cmd, $tempdirA, $tempdirB);
-my ($WGAfile, $WGAdotfile, $WGAscriptfile);
+my ($tmpWGAfile, $WGAfile, $WGAdotfile, $WGAscriptfile);
 my ($outTSVfile, $outLOGfile, $outPDFfile);
 
-getopts('hcmn:I:C:l:A:B:', \%opts);
+getopts('hcmgG:n:I:C:l:A:B:', \%opts);
 
 if(($opts{'h'})||(scalar(keys(%opts))==0))
 {
   print "\nusage: $0 [options]\n\n";
   print "-h this message\n";
-  print "-A FASTA file of genome A             (example: -A speciesA.fna[.gz])\n";
-  print "-B FASTA file of genome B             (example: -B speciesB.fna[.gz])\n";
-  print "-l min contig length [Mbp]            (optional, default: -l $minlenMb)\n";
-  print "-m FASTA files already soft-masked    (optional, default: masked with Red\n";
-  print "-n number of cores while masking      (optional, default: $ncores\n";
-  print "-C parameters for Cgaln aligner       (optional, default: -C '$WGA_Cgaln_params')\n";
-  print "-I parameters for Cgaln indexer       (optional, default: -I '$WGA_index_params')\n";
-  print "-c print credits and checks install   (recommended)\n";
+  print "-A FASTA file of genome A              (example: -A speciesA.fna[.gz])\n";
+  print "-B FASTA file of genome B              (example: -B speciesB.fna[.gz])\n";
+  print "-l min contig length [Mbp]             (optional, default: -l $minlenMb)\n";
+  print "-m FASTA files already soft-masked     (optional, default: masked with Red\n";
+  print "-n number of cores                     (optional, some tasks only, default: $ncores\n";
+  print "-g use multithreaded GSAlign algorithm (optional, default: Cgaln)\n";              
+  print "-C parameters for Cgaln aligner        (optional, default: -C '$WGA_Cgaln_params')\n";
+  print "-I parameters for Cgaln indexer        (optional, default: -I '$WGA_index_params')\n";
+  print "-G parameters for GSAlign aligner      (optional, default: -G '$WGA_GSAlign_params')\n";
+  print "-c print credits and checks install    (recommended)\n";
   exit(0);
 }
 
@@ -101,19 +105,36 @@ if(defined($opts{'m'})) {
   $softmask = 0
 }
 
-if(defined($opts{'I'})) {
-  $WGA_index_params = $opts{'I'}
+if(defined($opts{'g'})) { # GSAlign
+
+  $use_gsalign = 1;
+
+  if(defined($opts{'G'})) {
+    $WGA_GSAlign_params = $opts{'G'}
+  }
+
+  $root = basename($fileA) .'.'. basename($fileA) . '_GSAlign_' . $WGA_GSAlign_params;
+  $root =~ s/\s+/_/g;
+
+  warn "## $0 -A $fileA -B $fileB -l $minlenMb -m $softmask -g $use_gsalign -G $WGA_GSAlign_params -n $ncores\n\n";
+  warn "## root: $root\n\n";
+
+} else { # Cgaln
+
+  if(defined($opts{'I'})) {
+    $WGA_index_params = $opts{'I'}
+  }
+
+  if(defined($opts{'C'})) {
+    $WGA_Cgaln_params = $opts{'C'}
+  }
+
+  $root = basename($fileA) .'.'. basename($fileA) . '_Cgaln_' . $WGA_index_params . '_' . $WGA_Cgaln_params;
+  $root =~ s/\s+/_/g;
+  
+  warn "## $0 -A $fileA -B $fileB -l $minlenMb -m $softmask -G $use_gsalign -I $WGA_index_params -C $WGA_Cgaln_params -n $ncores\n\n";
+  warn "## root: $root\n\n";
 }
-
-if(defined($opts{'C'})) {
-  $WGA_Cgaln_params = $opts{'C'}
-}
-
-$root = basename($fileA) .'.'. basename($fileA) . $WGA_index_params . '_' . $WGA_Cgaln_params;
-$root =~ s/\s+/_/g;
-
-warn "## $0 -A $fileA -B $fileB -l $minlenMb -m $softmask -I $WGA_index_params -C $WGA_Cgaln_params -n $ncores\n\n";
-warn "## root: $root\n\n";
 
 ######################################################
 
@@ -153,54 +174,92 @@ if($softmask == 1) {
 }
 
 # 3) compute WGA
-#
-# by default maketable & Cgaln are used, which create temp folder named 'CgalnTable'
 
-print "\n## indexing masked, filtered sequences\n\n";
+# 3.1) Cgaln algorithm (default), creates temp folder named 'CgalnTable'
+if($use_gsalign == 0) {
 
-# 3.0) clean previous temp folder
-#system("rm -rf CgalnTable");
+  print "## CGaln algorithm\n\n";	
+  print "\n## indexing masked, filtered sequences\n\n";
 
-# 3.1) compute indexes of filtered sequences
-$cmd = "$CINDEXEXE $WGA_index_params $maskA";
-system("$cmd");
-if($? != 0) {
-  die "# EXIT: failed while indexing ($cmd)\n";
-}
+  # clean previous temp folder; #system("rm -rf CgalnTable");
 
-$cmd = "$CINDEXEXE $WGA_index_params $maskB";
-system("$cmd");
-if($? != 0) {
-  die "# EXIT: failed while indexing ($cmd)\n";
-}
+  # 3.1.1) compute indexes of filtered sequences
+  $cmd = "$CINDEXEXE $WGA_index_params $maskA";
+  system("$cmd");
+  if($? != 0) {
+    die "# EXIT: failed while indexing ($cmd)\n";
+  }
 
-# 3.2) compute Whole Genome Alignments of indexed sequences
+  $cmd = "$CINDEXEXE $WGA_index_params $maskB";
+  system("$cmd");
+  if($? != 0) {
+    die "# EXIT: failed while indexing ($cmd)\n";
+  }
 
-print "\n## computing and plotting Whole Genome Alignment\n\n";
+  # 3.1.2) compute Whole Genome Alignments of indexed sequences
+  print "\n## computing and plotting Whole Genome Alignment\n\n";
 
-$WGAfile    = $root . '.Cgaln.fasta';
-$WGAdotfile = $root . '.Cgaln.dot'; 
+  $WGAfile    = $root . '.Cgaln.fasta';
+  $WGAdotfile = $root . '.Cgaln.dot'; 
 
-$cmd = "$CGALNEXE $maskA $maskB -o $WGAfile $WGA_Cgaln_params -r -fc -cons -otype2";
-system("$cmd");
-if($? != 0) {
-  die "# EXIT: failed while aligning ($cmd)\n";
+  $cmd = "$CGALNEXE $maskA $maskB -o $WGAfile $WGA_Cgaln_params -r -fc -cons -otype2";
+  system("$cmd");
+  if($? != 0) {
+    die "# EXIT: failed while aligning ($cmd)\n";
+
+  } else {
+    system("gzip -f $WGAfile");
+    $WGAfile .= '.gz';  
+  }
+
+  $cmd = "$CGALNEXE $maskA $maskB -o $WGAdotfile $WGA_Cgaln_params -r -fc -cons -otype0";
+  system("$cmd");
+  if($? != 0) {
+    die "# EXIT: failed while aligning ($cmd)\n";
+  }
+
+  # 3.1.3) define outfilenames
+  $WGAscriptfile = $root . '.Cgaln.dot.script';
+  $outPDFfile    = $root . '.Cgaln.dot.pdf';
 
 } else {
-  system("gzip -f $WGAfile");
-  $WGAfile .= '.gz';  
-}
 
-$cmd = "$CGALNEXE $maskA $maskB -o $WGAdotfile $WGA_Cgaln_params -r -fc -cons -otype0";
-system("$cmd");
-if($? != 0) {
-  die "# EXIT: failed while aligning ($cmd)\n";
+  # 3.2) GSAlign algorithm (optional, multithreaded) 	
+  print "## GSAlign algorithm\n\n";       	
+
+  # 3.2.1) compute Whole Genome Alignments 
+  print "\n## computing and plotting Whole Genome Alignment\n\n";
+
+  $tmpWGAfile = $root . '.GSAlign.aln';
+  $WGAfile    = $root . '.GSAlign.fasta';
+  $WGAdotfile = $root . '.GSAlign.dot';
+
+  $cmd = "$CGALNEXE -r $maskA -q $maskB -o $root.GSAlign $WGA_GSAlign_params -fmt 2";
+  system("$cmd");
+  if($? != 0) {
+    die "# EXIT: failed while aligning ($cmd)\n";
+
+  } else {
+    # convert alignment format
+    $cmd = "$ALN2FASTA -a $tmpWGAfile -f $WGAfile -d $WGAdotfile";
+    system("$cmd");
+    if($? != 0) {
+      die "# EXIT: failed conversion ($cmd)\n";
+
+    } else {
+      system("gzip -f $WGAfile");
+      $WGAfile .= '.gz';
+    }
+  }
+
+  # 3.2.3) define outfilenames
+  $WGAscriptfile = $root . '.GSAlign.dot.script';
+  $outPDFfile    = $root . '.GSAlign.dot.pdf';
+
+  exit;
 }
 
 # 3.3) export dotplot to PDF for visual inspection and parameter tweaking
-
-$WGAscriptfile = $root . '.Cgaln.dot.script';
-$outPDFfile    = $root . '.Cgaln.dot.pdf';
 
 open(SCRIPT,">",$WGAscriptfile) || die "# cannot create $WGAscriptfile $!\n";
 
