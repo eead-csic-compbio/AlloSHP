@@ -9,7 +9,7 @@ use File::Temp qw/ tempdir /;
 # Takes two genome assemblies (A & B) in FASTA format and computes a Whole-Genome Alignment (WGA).
 # By default uses Cgaln for the alignments, which is single-threaded, . 
 # Returns:
-# 1) TSV file matching coordinates from A to B 
+# 1) BED file matching 0-based coordinates from A to B 
 # 2) LOG file (text) with WGA stats
 # 3) PDF file with dotplot of WGA for quality control [requires gnuplot in the system, not provided]
 
@@ -31,11 +31,11 @@ my $MAPCOORDS  = "$Bin/utils/mapcoords.pl";
 
 my %opts;
 my ($fileA, $fileB, $minlenMb, $ncores, $softmask, $use_gsalign) = ('', '', 1.0, 4, 1, 0);
-my ($WGA_Cgaln_params, $WGA_index_params) = ('-X12000', '-K11 -BS10000');
-my $WGA_GSAlign_params = '-no_vcf -one';
+my ($WGA_Cgaln_params, $WGA_index_params) = ('-X12000 -fc -cons', '-K11 -BS10000');
+my $WGA_GSAlign_params = '-no_vcf -one'; #-one, -sen
 my ($root, $cmd, $tempdirA, $tempdirB);
 my ($tmpWGAfile, $WGAfile, $WGAdotfile, $WGAscriptfile);
-my ($outTSVfile, $outLOGfile, $outPDFfile);
+my ($outBEDfile, $outLOGfile, $outPDFfile);
 
 getopts('hcmgG:n:I:C:l:A:B:', \%opts);
 
@@ -101,10 +101,6 @@ if(defined($opts{'n'}) && $opts{'n'} >= 0) {
   $ncores = $opts{'n'}
 }
 
-if(defined($opts{'m'})) {
-  $softmask = 0
-}
-
 if(defined($opts{'g'})) { # GSAlign
 
   $use_gsalign = 1;
@@ -113,13 +109,17 @@ if(defined($opts{'g'})) { # GSAlign
     $WGA_GSAlign_params = $opts{'G'}
   }
 
-  $root = basename($fileA) .'.'. basename($fileA) . '_GSAlign_' . $WGA_GSAlign_params;
+  $root = basename($fileA) .'.'. basename($fileB) . '_GSAlign_' . $WGA_GSAlign_params;
   $root =~ s/\s+/_/g;
 
-  warn "## $0 -A $fileA -B $fileB -l $minlenMb -m $softmask -g $use_gsalign -G $WGA_GSAlign_params -n $ncores\n\n";
+  warn "## $0 -A $fileA -B $fileB -l $minlenMb -g $use_gsalign -G $WGA_GSAlign_params -n $ncores\n\n";
   warn "## root: $root\n\n";
 
 } else { # Cgaln
+
+  if(defined($opts{'m'})) {
+    $softmask = 0
+  }
 
   if(defined($opts{'I'})) {
     $WGA_index_params = $opts{'I'}
@@ -129,7 +129,7 @@ if(defined($opts{'g'})) { # GSAlign
     $WGA_Cgaln_params = $opts{'C'}
   }
 
-  $root = basename($fileA) .'.'. basename($fileA) . '_Cgaln_' . $WGA_index_params . '_' . $WGA_Cgaln_params;
+  $root = basename($fileA) .'.'. basename($fileB) . '_Cgaln_' . $WGA_index_params . '_' . $WGA_Cgaln_params;
   $root =~ s/\s+/_/g;
   
   warn "## $0 -A $fileA -B $fileB -l $minlenMb -m $softmask -G $use_gsalign -I $WGA_index_params -C $WGA_Cgaln_params -n $ncores\n\n";
@@ -175,22 +175,25 @@ if($softmask == 1) {
 
 # 3) compute WGA
 
+$tmpWGAfile = $root . '.aln';
+$WGAfile    = $root . '.fasta';
+$WGAdotfile = $root . '.dot';
+
 # 3.1) Cgaln algorithm (default), creates temp folder named 'CgalnTable'
 if($use_gsalign == 0) {
 
   print "## CGaln algorithm\n\n";	
   print "\n## indexing masked, filtered sequences\n\n";
 
-  # clean previous temp folder; #system("rm -rf CgalnTable");
-
-  # 3.1.1) compute indexes of filtered sequences
-  $cmd = "$CINDEXEXE $WGA_index_params $maskA";
+  # 3.1.1) compute indexes of filtered sequences,
+  # saves indexes in folder _Cgalnidx
+  $cmd = "$CINDEXEXE $WGA_index_params -o _Cgalnidx $maskA";
   system("$cmd");
   if($? != 0) {
     die "# EXIT: failed while indexing ($cmd)\n";
   }
 
-  $cmd = "$CINDEXEXE $WGA_index_params $maskB";
+  $cmd = "$CINDEXEXE $WGA_index_params -o _Cgalnidx $maskB";
   system("$cmd");
   if($? != 0) {
     die "# EXIT: failed while indexing ($cmd)\n";
@@ -199,10 +202,7 @@ if($use_gsalign == 0) {
   # 3.1.2) compute Whole Genome Alignments of indexed sequences
   print "\n## computing and plotting Whole Genome Alignment\n\n";
 
-  $WGAfile    = $root . '.Cgaln.fasta';
-  $WGAdotfile = $root . '.Cgaln.dot'; 
-
-  $cmd = "$CGALNEXE $maskA $maskB -o $WGAfile $WGA_Cgaln_params -r -fc -cons -otype2";
+  $cmd = "$CGALNEXE $maskA $maskB -o $WGAfile $WGA_Cgaln_params -r -otype2 -t _Cgalnidx";
   system("$cmd");
   if($? != 0) {
     die "# EXIT: failed while aligning ($cmd)\n";
@@ -212,15 +212,11 @@ if($use_gsalign == 0) {
     $WGAfile .= '.gz';  
   }
 
-  $cmd = "$CGALNEXE $maskA $maskB -o $WGAdotfile $WGA_Cgaln_params -r -fc -cons -otype0";
+  $cmd = "$CGALNEXE $maskA $maskB -o $WGAdotfile $WGA_Cgaln_params -r -otype0 -r -t _Cgalnidx";
   system("$cmd");
   if($? != 0) {
     die "# EXIT: failed while aligning ($cmd)\n";
   }
-
-  # 3.1.3) define outfilenames
-  $WGAscriptfile = $root . '.Cgaln.dot.script';
-  $outPDFfile    = $root . '.Cgaln.dot.pdf';
 
 } else {
 
@@ -230,18 +226,14 @@ if($use_gsalign == 0) {
   # 3.2.1) compute Whole Genome Alignments 
   print "\n## computing and plotting Whole Genome Alignment\n\n";
 
-  $tmpWGAfile = $root . '.GSAlign.aln';
-  $WGAfile    = $root . '.GSAlign.fasta';
-  $WGAdotfile = $root . '.GSAlign.dot';
-
-  $cmd = "$CGALNEXE -r $maskA -q $maskB -o $root.GSAlign $WGA_GSAlign_params -fmt 2";
+  $cmd = "$GSALIGNEXE -r $maskA -q $maskB -o $root $WGA_GSAlign_params -fmt 2";
   system("$cmd");
   if($? != 0) {
     die "# EXIT: failed while aligning ($cmd)\n";
 
   } else {
     # convert alignment format
-    $cmd = "$ALN2FASTA -a $tmpWGAfile -f $WGAfile -d $WGAdotfile";
+    $cmd = "$ALN2FASTA $tmpWGAfile $maskA $maskB $WGAfile $WGAdotfile";
     system("$cmd");
     if($? != 0) {
       die "# EXIT: failed conversion ($cmd)\n";
@@ -251,15 +243,12 @@ if($use_gsalign == 0) {
       $WGAfile .= '.gz';
     }
   }
-
-  # 3.2.3) define outfilenames
-  $WGAscriptfile = $root . '.GSAlign.dot.script';
-  $outPDFfile    = $root . '.GSAlign.dot.pdf';
-
-  exit;
 }
 
 # 3.3) export dotplot to PDF for visual inspection and parameter tweaking
+
+$WGAscriptfile = $root . '.dot.script';
+$outPDFfile    = $root . '.dot.pdf';
 
 open(SCRIPT,">",$WGAscriptfile) || die "# cannot create $WGAscriptfile $!\n";
 
@@ -267,7 +256,7 @@ print SCRIPT<<"END";
 set terminal pdf
 set grid
 set output "$outPDFfile"
-plot "$WGAdotfile" with lines
+plot "$WGAdotfile" with lines lw 5
 unset output
 exit
 END
@@ -284,21 +273,25 @@ if($? != 0) {
   $outPDFfile = "(failed, need to install gnuplot)\n"; 
 }
 
-# 3.4) convert WGA to TSV 
+# 3.4) convert WGA to TSV, soft-masked positions are skipped 
 
 print "\n## converting Whole Genome Alignment to TSV\n\n";
 
-$outTSVfile = $root . '.tsv';
+$outBEDfile = $root . '.bed';
 $outLOGfile = $root . '.coords.log';
 
-$cmd = "$MAPCOORDS $WGAfile $maskA $maskB > $outTSVfile 2> $outLOGfile";
+if($use_gsalign == 0) {
+  $cmd = "$MAPCOORDS $WGAfile $maskA $maskB > $outBEDfile 2> $outLOGfile";
+} else {
+  $cmd = "$MAPCOORDS $WGAfile $maskA $maskB 1 > $outBEDfile 2> $outLOGfile";
+}
 system("$cmd");
 if($? != 0) {
   die "# EXIT: failed while converting to TSV ($cmd)\n";
 }
 
 print "## output files:\n\n";
-print "# TSV: $outTSVfile\n";
+print "# BED: $outBEDfile\n";
 print "# LOG: $outLOGfile\n";
 print "# PDF: $outPDFfile\n\n";
 
