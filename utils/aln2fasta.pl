@@ -25,6 +25,7 @@ warn "# infastaA: $fastafileA\n";
 warn "# infastaB: $fastafileB\n";
 warn "# FASTA file: $outfastafile\n";
 warn "# dot file: $outdotfile\n";
+warn "# \$MINHSPLENGTH = $MINHSPLENGTH\n\n";
 
 my ($block,$hsp,$n_of_chrs,$length) = (0,0,0,0);
 my ($strandA,$chrA,$chrB,$cumulscore,$pos,$seq);
@@ -127,20 +128,20 @@ while(<ALN>) {
         $block);
 
     } else {
-      next;
-    }
+      next; # skip any other cases
+    } 
 
     # split alignment in gapless HSPs to mimic Cgaln output
     $pos = 0;
     $length = 0;
     ($startA,$startB) = ($coordA, $coordB);
     ($endA,$endB) = ($coordA, $coordB); 
-    while($pos < length($seqA)) {
+    while($pos <= length($seqA)) {
 
       $baseA = substr($seqA,$pos,1);
       $baseB = substr($seqB,$pos,1); 
 
-      if($baseA eq '-' || $baseB eq '-') {
+      if($baseA eq '-' || $baseB eq '-' || $pos == length($seqA)) {
 
 	if($length > 0) {      
           $hsp++;
