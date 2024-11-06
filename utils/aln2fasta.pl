@@ -161,8 +161,13 @@ while(<ALN>) {
 	  # process previous HSP when indel found, both FASTA and DOT, provided is long enough
 	  if($length > $MINHSPLENGTH) {
 
-            $hsp2print = sprintf(">A_fst%d:%d-%d:HSP number %d:score %d:score_cumulative %d\n",
-              $chr2numA{ $chrA },$startA,$endA,$hsp,$length,$cumulscore); 
+            if($strandA eq 'Forward') {		  
+              $hsp2print = sprintf(">A_fst%d:%d-%d:HSP number %d:score %d:score_cumulative %d\n",
+                $chr2numA{ $chrA },$startA,$endA,$hsp,$length,$cumulscore);
+            } else {
+              $hsp2print = sprintf(">A_fst%d_revcom:%d-%d:HSP number %d:score %d:score_cumulative %d\n",
+                $chr2numA{ $chrA },$startA,$endA,$hsp,$length,$cumulscore);
+            }	    
             $hsp2print .= "$hspA\n";
             $hsp2print .= sprintf(">B_fst%d:%d-%d:HSP number %d:score %d:score_cumulative %d\n",
               $chr2numB{ $chrB },$startB,$endB,$hsp,$length,$cumulscore); 
