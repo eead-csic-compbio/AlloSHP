@@ -31,7 +31,8 @@ my ($block,$hsp,$n_of_chrs,$length) = (0,0,0,0);
 my ($strandA,$chrA,$chrB,$cumulscore,$pos,$seq);
 my ($startA,$endA,$startB,$endB,$seqA,$seqB);
 my ($baseA,$baseB,$coordA,$coordB,$hspA,$hspB);
-my (%chr2numA,%chr2numB);
+my ($hsp2print,$dot2print);
+my (%chr2numA,%chr2numB,@hsps,@dots);
 
 ## 0) create outfiles
 open(FASTA,">",$outfastafile) || die "# ERROR: cannot create $outfastafile\n";
@@ -66,8 +67,8 @@ warn "# number of chrs in B FASTA file: $n_of_chrs\n";
 #Identity = 1324 / 1440 (91.90%) Orientation = Forward
 
 # alignments are consecutive pairs of lines like:
-#ref.Bd2          24148001    atcaagtgttgatggtCAataagaccaccagtttcaagaaggcaaaggGTAAGAAGGGAAATTTCAAGAAGGGTGGCAAA
-#qry.Chr01        16470050    atcaagtgttgatggttgataagaccaccagtttcaagaaggcaaagg--------------ttcaaaaag---------
+#ref.Bd2          24148001    ttcaagaaggcaaaggGTAAGAAGGGAAATTTCAAGAAGGGTGGCAAA
+#qry.Chr01        16470050    ttcaagaaggcaaagg--------------ttcaaaaag---------
 
 # blocks end with:
 #**********************
@@ -88,6 +89,8 @@ while(<ALN>) {
     $block++;
     ($seqA,$seqB,$hspA,$hspB,$hsp,$cumulscore) = ('','','','',0,0);
     ($coordA,$coordB) = (-1,-1);    
+    @hsps = ();
+    @dots = ();
 
   } elsif(/^ref\.(\S+)\s+(\d+)\s+(\S+)/) {
     ($chrA,$pos,$seq) = ($1,$2,$3);
@@ -131,7 +134,8 @@ while(<ALN>) {
       next; # skip any other cases
     } 
 
-    # split alignment in gapless HSPs to mimic Cgaln output
+    # split multi-line pairwsie alignment in gapless HSPs,
+    # this mimics Cgaln output
     $pos = 0;
     $length = 0;
     ($startA,$startB) = ($coordA, $coordB);
@@ -156,17 +160,21 @@ while(<ALN>) {
 
 	  # process previous HSP when indel found, both FASTA and DOT, provided is long enough
 	  if($length > $MINHSPLENGTH) {
-            printf(FASTA ">A_fst%d:%d-%d:HSP number %d:score %d:score_cumulative %d\n",
+
+            $hsp2print = sprintf(">A_fst%d:%d-%d:HSP number %d:score %d:score_cumulative %d\n",
               $chr2numA{ $chrA },$startA,$endA,$hsp,$length,$cumulscore); 
-            print FASTA "$hspA\n";
-            printf(FASTA ">B_fst%d:%d-%d:HSP number %d:score %d:score_cumulative %d\n",
+            $hsp2print .= "$hspA\n";
+            $hsp2print .= sprintf(">B_fst%d:%d-%d:HSP number %d:score %d:score_cumulative %d\n",
               $chr2numB{ $chrB },$startB,$endB,$hsp,$length,$cumulscore); 
-            print FASTA "$hspB\n\n"; 
+            $hsp2print .= "$hspB\n"; 
  
-            printf(DOT "#HSP number: %d, length: %d, score: %d, score_cumulative: %d\n",
+            $dot2print = sprintf("#HSP number: %d, length: %d, score: %d, score_cumulative: %d\n",
               $hsp,$length,$length,$cumulscore);
-            printf(DOT "%d\t%d\n%d\t%d\n\n",
-              $startA,$startB,$endA,$endB); 		    
+            $dot2print .= sprintf("%d\t%d\n%d\t%d\n",
+              $startA,$startB,$endA,$endB); 		 
+
+            push(@hsps, $hsp2print);
+            push(@dots, $dot2print); 	    
           }
 
 	  # init next HSP
@@ -212,17 +220,16 @@ while(<ALN>) {
       $pos++;	    
     }
 
-    # process last HSP
+    # print HSPs in reverse order, as in Cgaln
+    foreach $hsp2print (reverse(@hsps)) {
+      print FASTA "$hsp2print\n";
+    }
+    print FASTA "#####}\n";
 
-    # print FASTA
-
-    #>A_fst1:18718865-18718886:HSP number 14:score 44:score_cumulative 246
-    #GTGTTCTTAAATATATTAATTA
-    #>B_fst1:15082265-15082286:HSP number 14:score 44:score_cumulative 246
-    #GTGCTCTTAACTATATTAGTTA
-    
-    # print DOT
-
+    foreach $dot2print (reverse(@dots)) {
+      print DOT "$dot2print\n";
+    }
+    print DOT "#####}\n";
   }
 }
 close(ALN);
