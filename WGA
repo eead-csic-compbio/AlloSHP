@@ -29,6 +29,7 @@ my $CINDEXEXE  = "$Bin/lib/Cgaln/maketable";
 my $REDEXE     = "$Bin/lib/Red/bin/Red";
 my $RED2ENS    = "$Bin/utils/Red2Ensembl.py";
 my $ALN2FASTA  = "$Bin/utils/aln2fasta.pl";
+my $FASTA2DOT  = "$Bin/utils/fasta2dot.pl";
 my $MAPCOORDS  = "$Bin/utils/mapcoords.pl";
 
 my %opts;
@@ -212,15 +213,16 @@ if($use_gsalign == 0) {
   if($? != 0) {
     die "# EXIT: failed while aligning ($cmd)\n";
 
-  } else {
-    system("gzip -f $WGAfile");
-    $WGAfile .= '.gz';  
-  }
+  } 
 
-  $cmd = "$CGALNEXE $maskA $maskB -o $WGAdotfile $WGA_Cgaln_params -r -otype0 -r -t _Cgalnidx";
+  $cmd = "$FASTA2DOT $WGAfile $WGAdotfile";
   system("$cmd");
   if($? != 0) {
-    die "# EXIT: failed while aligning ($cmd)\n";
+    die "# EXIT: failed while converting FASTA to DOT ($cmd)\n";
+
+  } else {
+    system("gzip -f $WGAfile");
+    $WGAfile .= '.gz';
   }
 
 } else {
