@@ -275,7 +275,7 @@ if($? != 0) {
 
 # 3.4) convert WGA to TSV, soft-masked positions are skipped 
 
-print "\n## converting Whole Genome Alignment to TSV\n\n";
+print "\n## converting Whole Genome Alignment to BED\n\n";
 
 $outBEDfile = $root . '.bed';
 $outLOGfile = $root . '.coords.log';
