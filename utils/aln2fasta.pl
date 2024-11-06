@@ -145,6 +145,14 @@ while(<ALN>) {
 	if($length > 0) {      
           $hsp++;
 
+          # correct end coords
+	  $endB--;
+	  if($strandA eq 'Forward') {
+	    $endA--;
+	  } else {
+	    $endA++;
+	  }
+
 	  # process previous HSP when indel found, both FASTA and DOT, provided is long enough
 	  if($length > $MINHSPLENGTH) {
             printf(FASTA ">A_fst%d:%d-%d:HSP number %d:score %d:score_cumulative %d\n",
@@ -156,10 +164,11 @@ while(<ALN>) {
  
             printf(DOT "#HSP number: %d, length: %d, score: %d, score_cumulative: %d\n",
               $hsp,$length,$length,$cumulscore);
-            print DOT "$startA\t$startB\n$endA\t$endB\n\n"; #exit if($hsp==2);
+            printf(DOT "%d\t%d\n%d\t%d\n\n",
+              $startA,$startB,$endA,$endB); 		    
           }
 
-	  # reinit next HSP
+	  # init next HSP
 	  $length = 0;
           ($hspA,$hspB) = ('','');
           if($strandA eq 'Forward') {
