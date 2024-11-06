@@ -3,8 +3,10 @@ use strict;
 use warnings;
 use Getopt::Std;
 use File::Basename;
-use FindBin '$Bin';
 use File::Temp qw/ tempdir /;
+use FindBin '$Bin';
+use lib "$Bin/lib";
+use Memory::Usage;
 
 # Takes two genome assemblies (A & B) in FASTA format and computes a Whole-Genome Alignment (WGA).
 # By default uses Cgaln for the alignments, which is single-threaded, . 
@@ -137,6 +139,9 @@ if(defined($opts{'g'})) { # GSAlign
 }
 
 ######################################################
+
+my $mu = Memory::Usage->new();
+$mu->record('start');
 
 # 1) foreach FASTA file filter out short sequences, take returned temp file
 my $filtA = filter_FASTA_sequences( $fileA, $minlenMb, $GZIPEXE, $BZIP2EXE );
@@ -294,6 +299,14 @@ print "## output files:\n\n";
 print "# BED: $outBEDfile\n";
 print "# LOG: $outLOGfile\n";
 print "# PDF: $outPDFfile\n\n";
+
+
+# 4) summary of resources 
+$mu->record('end');
+
+print "\n\n\n## time and memory used (Kb):\n"; 
+$mu->dump();
+
 
 
 
