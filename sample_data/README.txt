@@ -1,5 +1,5 @@
-RNAseq_Bd5_Chr10_chr9_reduced.vcf.bz2:
-Sample file with RNAseq-based SNPs mapped to chromosomes Bd5, Chr10 & chr9 from three species (Bdis,Bsta,Bsyl) with Hisat2.
-Repeated VCF lines with indels have already been removed with utils/rm_double_lines.pl
 
+Bdis.fna.gz : compressed chromosome Bd2 from diploid *Brachypodium distachyon* (A)
+Bsta.fna.gz : compressed chromosome Chr01 from diploid *Brachypodium stacei* (B)
+BdisBd2_BstaChr01.vcf.gz : SNP variants from samples Bdis_ABR2, Bdis_Bd21, Bhyb_26, Bhyb_ABR113, Bsta_ABR114, Bsta_TE4-3 mapped to chromosomes Bd2 (A) and Chr01 (B)
 
