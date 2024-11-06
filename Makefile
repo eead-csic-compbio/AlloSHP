@@ -1,5 +1,5 @@
 
-install: install_Red install_Red2Ensembl install_Cgaln install_gsalign
+install: install_Red install_Red2Ensembl install_Cgaln install_GSAlign
 
 install_Red:
 	if [ ! -d "lib/Red" ]; then \
@@ -18,10 +18,15 @@ install_Cgaln:
 		cd lib && git clone https://github.com/rnakato/Cgaln.git && cd Cgaln && make && rm -f *.fasta *.o; \
 	fi
 
-install_gsalign:
+install_GSAlign:
 	if [ ! -d "lib/GSAlign" ]; then \
 		cd lib && git clone https://github.com/hsinnan75/GSAlign.git && cd GSAlign && make & rm -rf test; \
 	fi
+
+test:
+	perl WGA -A sample_data/Bdis.fna.gz -B sample_data/Bsta.fna.gz && \
+		perl WGA -A sample_data/Bdis.fna.gz -B sample_data/Bsta.fna.gz -g; \
+
 
 #cannot cope with raw barley chromosomes, see https://doi.org/10.1186/s13059-023-03071-z
 #minimap2release = 2.24
