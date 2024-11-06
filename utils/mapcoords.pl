@@ -152,7 +152,11 @@ foreach $blockid (sort {$blocks{$b}{'cumulscore'}<=>$blocks{$a}{'cumulscore'} ||
             $realnameB[$chrB],$realposB,$realposB+1,$baseB,
             $block);
       
-        if($baseA ne $baseB){ $aligned_position .= "SNP" }
+        if($baseA ne $baseB) { 
+          $aligned_position .= "SNP" 
+        } else {
+          $aligned_position .= "."
+        }
 
         # NOTE: different coords in B.stacei/B.sylvaticum often correspond to the same coord
         $Aposname = $realnameA[$chrA].'_'.$realposA;
