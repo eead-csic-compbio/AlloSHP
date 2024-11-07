@@ -42,14 +42,14 @@ my ($filename,$configfile,$reportfilename,$outfilename) = ('','','','');
 my ($mindepth,$maxmissing,$only_polymorphic,$outformat) = 
   ($MINDEPTHCOVERPERSAMPLE,$MAXMISSINGSAMPLES,$ONLYPOLYMORPHIC,$OUTFILEFORMAT);
 
-getopts('hpv:c:o:r:d:m:f:', \%opts);
+getopts('hpv:c:o:l:d:m:f:', \%opts);
 
 if(($opts{'h'})||(scalar(keys(%opts))==0)) {
   print "\nusage: $0 [options]\n\n";
   print "-h this message\n";
   print "-v input VCF file                                     (example: -v data.vcf.gz)\n";
   print "-c input TSV config file                              (example: -c config.tsv)\n";
-  print "-r output report file name                            (example: -r vcf.report.log)\n";  
+  print "-l output report file name                            (example: -l vcf.report.log)\n";  
   print "-o output MSA file name                               (optional, example: -o out.fasta)\n";
   print "-d min read depth at each position for each sample    (optional, example: -d 3, default -d $mindepth)\n";
   print "-m max missing samples                                (optional, example: -m 10, default -m $maxmissing\n";
@@ -70,10 +70,10 @@ if(!defined($opts{'c'})) {
   $configfile = $opts{'c'}
 }
 
-if(!defined($opts{'r'})) {
-  die "# ERROR: need output filename (-r)\n";
+if(!defined($opts{'l'})) {
+  die "# ERROR: need output filename (-l)\n";
 } else {
-  $reportfilename = $opts{'r'}
+  $reportfilename = $opts{'l'}
 }
 
 if(defined($opts{'o'})) {
