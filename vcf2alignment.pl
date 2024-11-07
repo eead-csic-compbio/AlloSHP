@@ -3,13 +3,14 @@ use strict;
 use warnings;
 use Getopt::Std;
 
-# converts an input VCF file, with might be GZIP/BZIP2 compressed, into a  
-# multiple sequence alignment in several supported formats 
+# convert an input VCF file, with might be GZIP/BZIP2 compressed, into a  
+# multiple sequence alignment (MSA) in several supported formats 
 # (check @validformats below)
+# Print 1-based coordinates to stdout, typically saved as a log file
 
 # Note: Chromosome names of genomes in VCF file must be different.
 
-# Bruno Contreras, Ruben Sancho EEAD-CSIC 2017-2023
+# Bruno Contreras, Ruben Sancho EEAD-CSIC 2017-2024
 
 my %IUPACdegen = (  
   'AG'=>'R', 'GA'=>'R', 'CT'=>'Y', 'TC'=>'Y',
@@ -20,18 +21,18 @@ my %revcomp = ('A'=>'T', 'T'=>'A','G'=>'C','C'=>'G', 'N'=>'N');
 
 my @validformats = qw( phylip nexus fasta );
 
-# VCF filtering and output options, edit as required
-my $MINDEPTHCOVERPERSAMPLE = 3; # natural, min number of reads mapped supporting a locus
-my $MAXMISSINGSAMPLES      = 8;  # natural, max number of missing samples accepted per locus
-my $ONLYPOLYMORPHIC        = 0;  # set to 0 to keep fixed loci, helps with sparse data
-my $OUTFILEFORMAT          = 'fasta'; # can also take other formats in @validformats
+# VCF thresholds for filtering and output options
+my $MINDEPTHCOVERPERSAMPLE = 3;       # integer, min read depth at each position for each sample
+my $MAXMISSINGSAMPLES      = 10;      # integer, max number of missing samples accepted per locus (VCF row)
+my $ONLYPOLYMORPHIC        = 0;       # output option: 0 (constant and SNPs) or 1 (only SNPs). Zero is recommended at this stage
+my $OUTFILEFORMAT          = 'fasta'; # other formats in @validformats (phylip, nexus or fasta)
 
 # first guess of key VCF columns, adjusted in real time below
-my $COLUMNFIRSTSAMPLE      = 9; # zero-based, VCF format http://www.1000genomes.org/node/101, format is previous one
-my $GENOTYPECOLUMNFORMAT   = 0; # zero-based, initial guess, they are set for each line
-my $DEPTHCOLUMNFORMAT      = 1; 
+my $COLUMNFIRSTSAMPLE      = 9; # integer, Column number (0/1-based) with the first sample in the VCF file
+my $GENOTYPECOLUMNFORMAT   = 0; # column count 0-based in the VCF file
+my $DEPTHCOLUMNFORMAT      = 1; # ??????????????????????????????????
 
-# external binaries, edit if not installed elsewhere and not in path
+# edit if they are installed elsewhere and not in path
 my $GZIPEXE  = 'gzip'; 
 my $BZIP2EXE = 'bzip2';
 
@@ -46,13 +47,13 @@ if(($opts{'h'})||(scalar(keys(%opts))==0))
 {
   print "\nusage: $0 [options]\n\n";
   print "-h this message\n";
-  print "-v input VCF file              (example: -v data.vcf.gz)\n";
-  print "-c input TSV config file       (example: -c config.tsv)\n";
-  print "-o output file name            (example: -o out.fasta)\n";
-  print "-d min depth of called SNPs    (optional, example: -d 10, default -d $mindepth)\n";
-  print "-m max missing samples         (optional, example: -m 10, default -m $maxmissing\n";
-  print "-f output format               (optional, example: -f nexus, default -f $outformat)\n";
-  print "-p take only polymorphic sites (optional, by default all sites are taken)\n";
+  print "-v input VCF file                                     (example: -v data.vcf.gz)\n";
+  print "-c input TSV config file                              (example: -c config.tsv)\n";
+  print "-o output MSA file name                               (example: -o out.fasta)\n";
+  print "-d min read depth at each position for each sample    (optional, example: -d 3, default -d $mindepth)\n";
+  print "-m max missing samples                                (optional, example: -m 10, default -m $maxmissing\n";
+  print "-f output format                                      (optional, example: -f nexus, default -f $outformat)\n";
+  print "-p take only polymorphic sites                        (optional, by default all sites, constant and SNPs, are taken)\n";
 
   exit(0);
 }
@@ -107,16 +108,20 @@ my ($corr_coord,$sample,$lastsample,$idx,$lastsampleidx,$file);
 my (@samplenames,@MSA,%MSAref,%stats,%refallele,%refstrand);
 my ($snpname,$badSNP,$shortname,$magic,%contigstats);
 my %vcf_real_names; # To shorten sample names in output alignment
-my %genomic_samples;# Set samples which should not count as missing data.
-                    # For instance, we used it to leave outgroups out of these calculations,
-                    # as their WGS reads are significantly deeper than GBS/RNAseq samples 
+my %genomic_samples;# Depreciated: Set samples which should not count as missing data.
+                    # Depreciated: For instance, we used it to leave outgroups out of these calculations,
+                    # Depreciated: as their WGS reads are significantly deeper than GBS/RNAseq samples 
 
 ## parse config file
 open(CONFIG,"<$configfile") || die "# cannot read $configfile\n";
 while(my $line = <CONFIG>)
 {
-  #./Bhyb127/Bhyb127.sort.q30.bam  Bhyb_Bhyb127    real_name
-  #syl_Cor_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam        1       deep_sample  
+  
+  # Example:config.tsv file
+  # sample1.sort.bam	Sample1	real_name
+  # sample1.sort.bam	Sample2	real_name
+  # sampleN.sort.bam	SampleN	real_name
+  
   chomp($line);
   my @cdata = split(/\t/,$line);
   if($cdata[2] eq 'real_name')
@@ -162,12 +167,17 @@ while(<VCF>)
 
   if($n_of_samples > 0)
   {
-    #Bd1  346  .  A  C  999  PASS  DP=4008;VDB=5.239035e-01;...  GT:PL:DP:SP:GQ  1/1:255,255,0:185:0:99  ...
 
-    # skip non-polymorphic sites if required
+  # Example: VCF file and information
+  # Index	 0     1   2  3   4   5    6      7              8      9        n
+  # Headers	 CHROM POS ID REF ALT QUAL FILTER INFO           FORMAT Sample_1 Sample_n
+  # Position_1   Chr1  25  .  G   C   284  .      DP=45;MQ0F=0;... GT:DP  0/0:45   ...
+  # Position_N   ChrN  N   .  ...
+
+    # skip non-polymorphic (constant) sites, if required
     next if($rawdata[4] eq '.' && $only_polymorphic);
 
-    # skip indels
+    # skip indels (should have been removed previously)
     next if($rawdata[3] =~ m/[A-Z]{2,}/ || $rawdata[4] =~ m/[A-Z]{2,}/); 
   
     # skip multiallelic SNPs
@@ -192,9 +202,10 @@ while(<VCF>)
     ($genomic_samples,$gbs_samples) = (0,0);
     foreach $idx ( $COLUMNFIRSTSAMPLE .. $lastsampleidx )
     {
-      #0/0:0,255,255:93:0:99
-      #1/1:255,255,0:185:0:99
-      #0/1:236,0,237:66:7:9
+      # 0/0:0,255,255:93:0:99 --> homozygous reference (REF) allele
+      # 1/1:255,255,0:185:0:99 --> homozygous alternative (ALT) allele
+      # 0/1:236,0,237:66:7:9 --> heterozygous
+
       my @sampledata = split(/:/,$rawdata[$idx]); 
       $genotype = $sampledata[$GENOTYPECOLUMNFORMAT];
       $depthcover = $sampledata[$DEPTHCOLUMNFORMAT]; 
@@ -236,7 +247,7 @@ while(<VCF>)
         }
         else{ if(!$genomic_samples{$samplenames[$sample]}){ $missing++ } }
       }
-      else # missing or htzg are treated as missin all the same
+      else # missing or heterozygous are treated as missing all the same way
       {
         if(!$genomic_samples{$samplenames[$sample]}){ $missing++ }
       }
@@ -259,7 +270,7 @@ while(<VCF>)
       $badSNP = 1;
     } 
 
-    # make sure monomorphic sites are skipped
+    # make sure monomorphic sites are skipped (if it was required)
     if(scalar(keys(%nts)) < 2 && $only_polymorphic){ $badSNP = 1 }
     
     if(!$badSNP)
@@ -270,7 +281,8 @@ while(<VCF>)
       }
     
       $snpname = "$rawdata[0]_$rawdata[1]";
-      
+     
+      # valid locus = valid row in VCF file, these are 1-based genomic coordinates straight from VCF
       printf(STDERR "# valid locus: $snpname $missing ".join(',',keys(%nts))."\n");
       
       foreach $sample (0 .. $lastsample)
@@ -394,5 +406,4 @@ foreach $sample (0 .. $lastsample)
       $samplenames[$sample],$contig,$contigstats{$sample}{$contig}{'N'} || 0);
   }
 }
-
 
