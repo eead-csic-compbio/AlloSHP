@@ -25,8 +25,10 @@ install_GSAlign:
 
 test:
 	perl WGA -A sample_data/Bdis.fna.gz -B sample_data/Bsta.fna.gz && \
-		perl WGA -A sample_data/Bdis.fna.gz -B sample_data/Bsta.fna.gz -g; \
-
+		perl WGA -A sample_data/Bdis.fna.gz -B sample_data/Bsta.fna.gz -g && \
+		perl vcf2alignment -v sample_data/BdisBd2_BstaChr01.vcf.gz -c sample_data/config.tsv -l BdisBd2_BstaChr01.vcf.log -d 5 -m 3 &&\
+		perl vcf2synteny -v sample_data/BdisBd2_BstaChr01.vcf.gz -c sample_data/config.synteny.tsv -l BdisBd2_BstaChr01.vcf.log \
+			-d 5 -m 3 -r Bdis -o BdisBd2_BstaChr01.DP5.M3.synteny.fasta &> BdisBd2_BstaChr01.DP5.M3.synteny.log; \		
 
 #cannot cope with raw barley chromosomes, see https://doi.org/10.1186/s13059-023-03071-z
 #minimap2release = 2.24
