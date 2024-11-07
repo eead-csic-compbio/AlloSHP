@@ -4,10 +4,11 @@ use warnings;
 use Getopt::Std;
 
 # Converts an input VCF file, with might be GZIP/BZIP2 compressed, into a  
-# multiple sequence alignment (MSA) in several supported formats 
-# (check @validformats below).
+# multiple sequence alignment (MSA) and produces a list of 1-based 
+# valid sites considering read depth (-d) and missing data (-m).
 #
-# Notes: prints 1-based coordinates to stdout, typically saved as a log file
+# Optionally it can output the MSA in several supported formats 
+# (check @validformats below).
 
 # Note: Chromosome names of genomes in VCF file must be different.
 
@@ -49,7 +50,7 @@ if(($opts{'h'})||(scalar(keys(%opts))==0)) {
   print "-h this message\n";
   print "-v input VCF file                                     (example: -v data.vcf.gz)\n";
   print "-c input TSV config file                              (example: -c config.tsv)\n";
-  print "-l output report file name                            (example: -l vcf.report.log)\n";  
+  print "-l output report file name, 1-based coordinates       (example: -l vcf.report.log)\n";  
   print "-o output MSA file name                               (optional, example: -o out.fasta)\n";
   print "-d min read depth at each position for each sample    (optional, example: -d 3, default -d $mindepth)\n";
   print "-m max missing samples                                (optional, example: -m 10, default -m $maxmissing\n";
