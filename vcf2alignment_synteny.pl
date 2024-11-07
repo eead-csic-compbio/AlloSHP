@@ -1,133 +1,390 @@
 #!/usr/bin/perl -w
 use strict;
+use warnings;
+use Getopt::Std;
+use DB_File;
+use FileHandle;
+
+$|=1;
 
 # Takes an input VCF file with reads mapped to several concatenated references,
 # and uses synteny-based equivalent coordinates to map polymorphism back to the 
 # main/user-defined chromosome positions, in an effort to separate subgenomes, 
 # which are then multiply aligned.
 # Only FASTA format is produced to facilitate collapsing sequences afterwards.
-
-# Input: VCF file with reads mapped to concatenated references, might be compressed
-
-# Bruno Contreras, Ruben Sancho EEAD-CSIC 2017
-
+# 
 # Synteny-based equivalent positions produced with utils/mapcoords.pl
 # These files are used to translate positions of secondary reference genomes
 # to coordinates of the master reference, which is chosen by the user.
 # In our benchmark the master is B. distachyon (Bdis), while B. stacei (Bsta) 
 # and B. sylvaticum (Bsyl) are defined as secondary.
 
-my $master_ref = 'Bdis';
+# Bruno Contreras, Ruben Sancho EEAD-CSIC 2017-2024
 
-my %synfiles = (
-  'Bsta' =>'sample_data/Bdistachyon.Bstacei.coords.SNP.tsv',
-  'Bsyl' =>'sample_data/Bdistachyon.Bsylvaticum.coords.SNP.tsv'
-);
 
-# Prefixes/regular expressions that connect chromosomes to reference genomes
-# NOTE that they must match the master and 2ary references or subgenomes
-my %chrcodes = (
-  'Bdis' =>qr/Bd(\d+)/,
-  'Bsta' =>qr/Chr(\d+)/,
-  'Bsyl' =>qr/chr(\d+)/
-);
-
-# Please edit and uncomment to shorten sample names in output alignment
-my %vcf_real_names = (
-  #'arb_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 'B.arbuscula',
-  #'hyb_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 'B.hybridum_BdTR6g',
-);
-
-# Please edit and uncomment to set samples which should not count as missing data.
-# For instance, we used it to leave outgroups out of these calculations, as their
-# reads were WGS reads with significantly more depth than GBS/RNAseq samples
-my %genomic_samples = (
-  'syl_Cor_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 1,
-  'syl_Esp_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 1,
-  'syl_Gre_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 1,
-  'Bdistachyon_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 1,
-  'Oryza_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 1,
-  'Sorghum_map_Bd_Bs_Bsyl_no_contigs.sorted.q30.bam' => 1
-);
-
-# VCF filtering and output options, edit as required
-my $SYNTENYZEROBASED       = 1;  # set to 1 if synteny coords are 0-based, as those produced by CGaln
-my $MINDEPTHCOVERPERSAMPLE = 10; # natural, min number of reads mapped supporting a locus
-my $MAXMISSINGSAMPLES      = 8;  # natural, max number of missing samples accepted per locus
-my $ONLYPOLYMORPHIC        = 1;  # set to 0 to keep fixed loci, helps with sparse data
-my $OUTFILEFORMAT          = 'fasta'; # can also take other formats in @validformats
-
-# first guess of key VCF columns, adjusted in real time below
-my $COLUMNFIRSTSAMPLE      = 9; # zero-based, VCF format http://www.1000genomes.org/node/101, format is previous one
-my $GENOTYPECOLUMNFORMAT   = 0; # zero-based, initial guess, they are set for eahc line
-my $DEPTHCOLUMNFORMAT      = 1; 
-
-# external binaries, edit if not installed elsewhere and not in path
-my $GZIPEXE  = 'gzip'; 
-my $BZIP2EXE = 'bzip2';
-
-if(!$ARGV[1]){ die "# usage: $0 <infile.vcf[.gz|.bz2]> <output alignment file>\n" }
-
-my ($filename,$outfilename) = @ARGV;
-
-my ($n_of_samples,$n_of_loci,$n_var_loci,$depthcover,$missing,$genotype,$allele) = (0,0,0);
-my ($corr_coord,$sample,$lastsample,$idx,$lastsampleidx,$file);
-my (@samplenames,@MSA,%MSAref,%stats,%refallele,%refstrand);
-my ($snpname,$badSNP,$shortname,$magic,%contigstats);
-my ($coord,$subgenome,$code,$corr_snpname,$chr);
-my (%MSA,%corr2snpname,%synmap_fwd,%synmap_rev);
-
-my %IUPACdegen = (  'AG'=>'R', 'GA'=>'R', 'CT'=>'Y', 'TC'=>'Y',
-                    'CG'=>'S', 'GC'=>'S', 'AT'=>'W', 'TA'=>'W',
-                    'GT'=>'K', 'TG'=>'K', 'AC'=>'M', 'CA'=>'M' );    
+my %IUPACdegen = (
+  'AG'=>'R', 'GA'=>'R', 'CT'=>'Y', 'TC'=>'Y',
+  'CG'=>'S', 'GC'=>'S', 'AT'=>'W', 'TA'=>'W',
+  'GT'=>'K', 'TG'=>'K', 'AC'=>'M', 'CA'=>'M' );
 
 my %revcomp = ('A'=>'T', 'T'=>'A','G'=>'C','C'=>'G', 'N'=>'N');
 
 my @validformats = qw( fasta );
-                              
-#######################################################
 
-if(!grep(/^$OUTFILEFORMAT$/,@validformats))
+# VCF filtering and output options, edit as required
+my $SYNTENYZEROBASED       = 1;        # set to 1 if synteny coords are 0-based, as those produced by CGaln
+my $MINDEPTHCOVERPERSAMPLE = 3;        # integer, min read depth at each position for each sample
+my $MAXMISSINGSAMPLES      = 10;       # integer, max number of missing samples accepted per locus (VCF row)
+my $ONLYPOLYMORPHIC        = 0;        # output option: 0 (constant and SNPs) or 1 (only SNPs). Zero is recommended at this stage
+my $OUTFILEFORMAT          = 'fasta';  # other formats in @validformats (phylip, nexus or fasta)
+
+# first guess of key VCF columns, adjusted in real time below
+my $COLUMNFIRSTSAMPLE      = 9; # integer, Column number (0/1-based) with the first sample in the VCF file
+my $GENOTYPECOLUMNFORMAT   = 0; # column count 0-based in the VCF file
+my $DEPTHCOLUMNFORMAT      = 1; # ??????????????????????????????????
+
+# external binaries, edit if not installed elsewhere and not in path,
+# assumes perl is in path
+my $GZIPEXE  = 'gzip'; 
+my $BZIP2EXE = 'bzip2';
+my $GREPEXE  = 'grep';
+my $SORTEXE  = 'sort -T tmp_vcf2alignment_synteny/ -S 20G';
+my $JOINEXE  = 'join';
+my $UNIQEXE  = 'uniq';
+my $CATEXE = 'cat';
+########################################################################
+
+my %opts;
+my ($filename,$prevlogfile,$configfile,$outfilename,$master_ref) = ('','','','');
+my ($mindepth,$maxmissing,$only_polymorphic,$outformat) =
+  ($MINDEPTHCOVERPERSAMPLE,$MAXMISSINGSAMPLES,$ONLYPOLYMORPHIC,$OUTFILEFORMAT);
+my $zerobased = $SYNTENYZEROBASED;
+
+getopts('h1pv:c:o:d:m:f:r:l:', \%opts);
+
+if(($opts{'h'})||(scalar(keys(%opts))==0))
 {
-  die "# unsupported output format, please select one of: ".join(', ',@validformats)."\n";
+  print "\nusage: $0 [options]\n\n";
+  print "-h this message\n";
+  print "-v input VCF file              (example: -v data.vcf.gz)\n";
+  print "-l logfile from vcf2alignment  (contains 1-based valid loci positions, example: -l v2a.log)\n"; 
+  print "-c input TSV config file       (example: -c config.tsv)\n";
+  print "-o output file name            (example: -o out.fasta)\n";
+  print "-r master reference genome     (example: -r Bdis)\n";
+  print "-d min depth of called SNPs    (optional, example: -d 3, default -d $mindepth)\n";
+  print "-m max missing samples         (optional, example: -m 10, default -m $maxmissing\n";
+  print "-f output format               (optional, example: -f nexus, default -f $outformat)\n";
+  print "-1 syntenic coords are 1-based (optional, file set in configsynt, by default they are 0-based)\n"; 
+  print "-p take only polymorphic sites (optional, by default all sites, constant and SNPs, are taken)\n";
+  exit(0);
+} 
+
+if(!defined($opts{'v'}))
+{
+  die "# ERROR: need input VCF file (-v)\n";
+} else {
+  $filename = $opts{'v'}
 }
 
-# read syntenic mapped position
+if(!defined($opts{'c'}))
+{
+  die "# ERROR: need input TSV config file (-c)\n";
+} else {
+  $configfile = $opts{'c'}
+}
 
-warn "# master reference: $master_ref\n";
+if(!defined($opts{'l'}))
+{
+  die "# ERROR: need input previous log file (-l), generated by vcf2alignment.pl\n";
+
+} else {
+    $prevlogfile = $opts{'l'}
+}
+
+
+if(!defined($opts{'o'}))
+{
+  die "# ERROR: need output filename (-o)\n";
+} else {
+  $outfilename = $opts{'o'}
+}
+
+if(!defined($opts{'r'}))
+{
+  die "# ERROR: need master reference genome (-r)\n";
+} else {
+  $master_ref = $opts{'r'}
+}
+
+if(defined($opts{'d'}) && $opts{'d'} > 0)
+{
+  $mindepth = $opts{'d'}
+}
+
+if(defined($opts{'m'}) && $opts{'d'} >= 0)
+{
+  $maxmissing = $opts{'m'}
+}
+
+if(defined($opts{'f'}) && grep(/^$opts{'f'}$/,@validformats))
+{
+  $outformat = $opts{'f'}
+}
+
+if(defined($opts{'p'}))
+{
+  $only_polymorphic = 1
+}
+
+if(defined($opts{'1'}))
+{
+  $zerobased = 0
+}
+
+printf(STDERR "# %s -r %s -v %s -c %s -l %s -o %s -d %d -m %d -f %s -p %d -1 %d\n\n",
+  $0,$master_ref,$filename,$configfile,$prevlogfile,$outfilename,
+  $mindepth,$maxmissing,$outformat,$only_polymorphic, 
+  !$zerobased);
+
+######################################################
+
+my ($n_of_samples,$n_of_loci,$n_var_loci) = (0,0,0);
+my ($depthcover,$missing,$genotype,$allele,$dipsp);
+my ($corr_coord,$sample,$lastsample,$idx,$lastsampleidx,$file);
+my (@samplenames,@MSA,%MSAref,%stats,%refallele,%refstrand);
+my ($snpname,$badSNP,$shortname,$magic,%contigstats);
+my ($coord,$subgenome,$code,$corr_snpname,$chr,$pos);
+my (%corr2snpname,%synfiles);
+
+# variables to create tied hashes which are BDB under the hood 
+my (%synmap_fwd,%synmap_rev,%synmap_master);
+my $fwd_tmp_file = '_fwd.coords.db';
+my $rev_tmp_file = '_rev.coords.db';
+my $mas_tmp_file = '_mas.coords.db';
+my $MSA_tmp_file = '_msa.txt';
+my $MSA_sort_file = '_msa.sort.txt';
+
+unlink($fwd_tmp_file, $rev_tmp_file);
+unlink($MSA_tmp_file);
+
+tie(%synmap_fwd,'DB_File',$fwd_tmp_file)
+  || die "# EXIT : cannot create $fwd_tmp_file: $! (BerkeleyDB::Error)\n";
+tie(%synmap_rev,'DB_File',$rev_tmp_file)
+  || die "# EXIT : cannot create $rev_tmp_file: $! (BerkeleyDB::Error)\n"; 
+tie(%synmap_master,'DB_File',$mas_tmp_file)
+  || die "# EXIT : cannot create $mas_tmp_file: $! (BerkeleyDB::Error)\n";
+#tie(%MSA,'DB_File',$MSA_tmp_file)
+  #  || die "# EXIT : cannot create $MSA_tmp_file: $! (BerkeleyDB::Error)\n";
+
+  #print "# re-using .db files\n";
+  #tie(%synmap_fwd,'DB_File',$fwd_tmp_file,O_RDWR, 0666, $DB_HASH) ||
+  #	die "# ERROR: cannot read file $fwd_tmp_file: $!\n";
+  #tie(%synmap_fwd,'DB_File',$rev_tmp_file,O_RDWR, 0666, $DB_HASH) ||
+  #     die "# ERROR: cannot read file $rev_tmp_file: $!\n";
+  #tie(%MSA, 'DB_File', $MSA_tmp_file,O_RDWR, 0666, $DB_HASH) ||
+  #      die "# ERROR: cannot read file $MSA_tmp_file: $!\n";
+
+my %vcf_real_names; # To shorten sample names in output alignment
+my %mapcoordfiles;  # User-defined files with pre-computed syntenic genomic coords
+my %chrcodes;       # Prefixes/regular expressions that connect chromosomes to reference diploid genomes,
+                    # must match the master and 2ary references or subgenomes
+my %genomic_samples;# Depreciated: Set samples which should not count as missing data.
+                    # Depreciated: For instance, we used it to leave outgroups out of these calculations,
+                    # Depreciated: as their WGS reads are significantly deeper than GBS/RNAseq samples
+
+## parse config file
+open(CONFIG,"<",$configfile) || die "# cannot read $configfile\n";
+while(my $line = <CONFIG>)
+{
+
+  # Example:configsynt.tsv file
+  # Sample1.sort.bam	Sample1	real_name
+  # Sample2.sort.bam	Sample2	real_name
+  # GenomeB	GenomeA.GenomeB.coords.tsv.gz mapcoords
+  # GenomeA	 SpA(\d+)	chrcode
+  # GenomeA      SpB(\d+)	chrcode
+  #
+
+  next if($line =~ m/^#/);
+  chomp($line);
+  my @cdata = split(/\t/,$line);
+  if($cdata[2] eq 'real_name')
+  {
+    $vcf_real_names{ $cdata[0] } = $cdata[1];
+  }
+  elsif($cdata[2] eq 'deep_sample')
+  { 
+    $genomic_samples{ $cdata[0] } = 1
+  }
+  elsif($cdata[2] eq 'mapcoords')
+  {
+    $mapcoordfiles{ $cdata[0] } = $cdata[1];    
+  }
+  elsif($cdata[2] eq 'chrcode')
+  {
+    $chrcodes{ $cdata[0] } = $cdata[1];
+  }
+  else
+  { 
+    print "# unrecognized configuration: $line\n";
+  }
+} 
+close(CONFIG);
+
+## Read mapcoords files with syntenic coords and get subsets of SNP positions,
+## takes three steps carried out with one-liners. Repeat for each 2ary diploid reference, keeping the same master genome.
+## NOTE: resulting synteny TSV files, after the three steps, contain 1-based genomics coordinates in all cases
+my ($grepchr_ref, $grepchr,$onelinercmd, $tmpfile, $tmpfile2);
+
+foreach $dipsp (keys(%mapcoordfiles)) 
+{
+  if(!$chrcodes{ $master_ref })
+  {
+    die "# ERROR: cannot find chr regex for $master_ref in $configfile\n";
+  }
+  else
+  {
+    # get regex prefix before capture (\d+)
+    $grepchr_ref = (split(/\(/,$chrcodes{ $master_ref }))[0];
+  }
+
+  if(!$chrcodes{ $dipsp })
+  {
+    die "# ERROR: cannot find chr regex for $dipsp in $configfile\n";
+  }
+  else
+  {
+    # get regex prefix before capture (\d+)
+    $grepchr = (split(/\(/,$chrcodes{ $dipsp }))[0];
+  }
+
+  # name expected outfiles
+  $tmpfile = "list_$dipsp\_positions.coords";
+  $tmpfile2 = "list_$dipsp\_positions.coords2";
+  $synfiles{ $dipsp } = "$master_ref.$dipsp.coords.positions.tsv";
+
+  if(-s $synfiles{ $dipsp }) # TODO add reuseOK arg
+  {
+    warn "# re-using $synfiles{ $dipsp }\n";
+    next;
+  }
+  else
+  {
+    warn "# computing $synfiles{ $dipsp } (3 steps)\n";
+  }
+
+  # step-1) Get VCF SNPs mapping diploid species chromosome (1-based)
+    # grep "valid locus" ../01_Toy_Bd2plusChr01/SNPs.BRACHY.rm.Bd2plusChr01.SNPs_plus_Constant_DP5MS3.log | \
+    # grep -v -P "Bd\d+" | grep Chr | perl -lne 'if(/(Chr\d+)_(\d+)/){ printf("%s.%d\n",$1,$2) }' | \
+    # sort -t '.' -k1,1 -k2,2n | uniq > tmpfile 
+  
+  $onelinercmd = "$GREPEXE 'valid locus' $prevlogfile | $GREPEXE -v -P \"$grepchr_ref\\d+\" " .
+    "| $GREPEXE -F $grepchr | perl -lne 'if(/($grepchr\\d+)_(\\d+)/){ printf(\"%s.%d\n\",\$1,\$2) }' " .
+    "| $SORTEXE -t '.' -k1,1 -k2,2n | $UNIQEXE > $tmpfile";
+
+  system("$onelinercmd");
+  if(!-s $tmpfile)
+  {
+    die "# ERROR: failed while running one-liner1: $onelinercmd\n";  
+  }
+
+  # step-2) sort coords from mapcoords synteny file to temp file, will correct 0-based coords to 1-based if needed
+    # zcat ../Bdistachyon.Bstacei2.1.coords.toy.tsv.gz | \
+    # perl -lane '$F[1]+=1; $F[5]+=1; print join(" ",@F[0 .. 8])' | \
+    # sort -k5,5 -k6,6n | \
+    # perl -lane 'print join(" ",@F[0 .. 3])." $F[4].".join(" ",@F[5 .. 8])' > tmpfile2
+ 
+  if($zerobased == 1) 
+  {
+    $onelinercmd = "$GZIPEXE -dc $mapcoordfiles{ $dipsp } | " .
+      'perl -lane \'$F[1]+=1; $F[5]+=1; print join(" ",@F[0 .. 8])\' |' .
+      "$SORTEXE -k5,5 -k6,6n | ".
+      'perl -lane \'print join(" ",@F[0 .. 3])." $F[4].".join(" ",@F[5 .. 8])\' ' .
+      " > $tmpfile2";
+  }
+  else 
+  {
+    $onelinercmd = "$GZIPEXE -dc $mapcoordfiles{ $dipsp } | " .
+      "$SORTEXE -k5,5 -k6,6n | ".
+      'perl -lane \'print join(" ",@F[0 .. 3])." $F[4].".join(" ",@F[5 .. 8])\' ' .
+      "> $tmpfile2";
+  }
+  
+  system("$onelinercmd");
+  if(!-s $tmpfile2)
+  { 
+    die "# ERROR: failed while running one-liner2: $onelinercmd\n";
+  }  
+
+  # step-3) Get master_ref mappings of diploid species coordinates, will produce 1-based genomic coords
+  # Depreciated: $onelinercmd = "$JOINEXE -o \"1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8\" -1 5 -2 1 $tmpfile2 $tmpfile |" .
+  # Depreciated: 'perl -plne "s/[\s\.]/\t/g" ' ."> $synfiles{ $dipsp }"; print "$onelinercmd\n";
+  # grep -w -F -f tmpfile tmpfile2 | perl -plne "s/[\s\.]/\t/g" > synfile_step3
+  
+  $onelinercmd = "$GREPEXE -w -F -f $tmpfile $tmpfile2 |" .
+    'perl -plne "s/[\s\.]/\t/g" ' .
+    "> $synfiles{ $dipsp }"; print "$onelinercmd\n";
+
+  system("$onelinercmd");
+  if(!-s $synfiles{ $dipsp })
+  {
+    die "# ERROR: failed while running one-liner3: $onelinercmd\n";
+  }
+
+  unlink($tmpfile, $tmpfile2);
+}
+
+## read syntenic mapped positions 
+
+warn "\n# master reference: $master_ref\n";
 warn "# secondary references: ".join(',',sort(keys(%synfiles)))."\n";
-warn "# synteny files (SYNTENYZEROBASED=$SYNTENYZEROBASED): \n";
+warn "# synteny files (SYNTENYZEROBASED=$zerobased): \n";
+
 foreach my $file (keys(%synfiles))
 {
   warn "# $file : $synfiles{$file}...\n";
+
   my $n_of_positions = 0;
   open(SYNFILE,$synfiles{$file}) || die "# cannot read $synfiles{$file}\n";
   while(<SYNFILE>)
   {
-    #Bd1  27606666  A forward Chr01 2828357 A 6 
+
     my @rawdata = split(/\t/,$_);
 
     $corr_coord = $rawdata[1];
     $coord      = $rawdata[5];
 
-    if($SYNTENYZEROBASED){
-      $corr_coord++;
-      $coord++;
+    #if($zerobased){ # not needed anymore, code uses 1-based coords at all times
+    #  $corr_coord++;
+    #  $coord++;
+    #}
+
+    $snpname = "$rawdata[4]_$coord"; # -> position in secondary reference (i.e GenomeB)
+
+    # record syntenic coords of master subgenome (keys are master)
+    $synmap_master{ "$rawdata[0]_$rawdata[1]" } = 1;
+
+    # record syntenic coords of secondary subgenome (keys are 2ary)
+    if($rawdata[3] eq 'forward'){ 
+      $synmap_fwd{ $snpname } = "$rawdata[0]_$corr_coord"; 
+      #print "$snpname $synmap_fwd{$snpname}\n";
+    }
+    else{ 
+      $synmap_rev{ $snpname } = "$rawdata[0]_$corr_coord"; 
+      #print "$snpname $synmap_rev{$snpname}\n";
     }
 
-    $snpname = "$rawdata[4]_$coord"; # -> position in secondary reference (ie Bstacei||Bsylvaticum)
-
-    if($rawdata[3] eq 'forward'){ $synmap_fwd{$snpname} = "$rawdata[0]_$corr_coord" }
-    else{ $synmap_rev{$snpname} = "$rawdata[0]_$corr_coord" }
-
     $n_of_positions++;
+
+    #last if($n_of_positions == 1_000_000); # debug
   }
   close(SYNFILE);
   warn "# total positions=$n_of_positions\n";
 } 
-warn "\n";
+warn "\n"; 
 
-# check input file and choose right way to parse input lines
+
+## check input VCF and choose right way to parse input lines
 my ($genomic_samples,$gbs_samples); 
 open(INFILE,$filename) || die "# cannot open input file $filename, exit\n";
 sysread(INFILE,$magic,2);
@@ -148,12 +405,10 @@ elsif($filename =~ /\.bz2$/ || $magic eq "BZ") # BZIP2 compressed input
 }
 else{ open(VCF,'<',$filename) }
 
-printf(STDERR "# input VCF file: $filename\n");
-printf(STDERR "# MINDEPTHCOVERPERSAMPLE=$MINDEPTHCOVERPERSAMPLE\n");
-printf(STDERR "# MAXMISSINGSAMPLES=$MAXMISSINGSAMPLES\n");
-printf(STDERR "# ONLYPOLYMORPHIC=$ONLYPOLYMORPHIC\n");
-printf(STDERR "# OUTFILEFORMAT=$OUTFILEFORMAT\n");
-   
+# open temp file to store SNPs, will be sorted after
+open(MSA,">",$MSA_tmp_file) || 
+   die "#ERROR: cannot create $MSA_tmp_file\n";
+
 while(<VCF>)   
 {  
    chomp($_);
@@ -161,18 +416,24 @@ while(<VCF>)
 
    if($n_of_samples > 0)
    {
-      #Bd1   346   .   A   C   999   PASS   DP=4008;VDB=5.239035e-01;...   GT:PL:DP:SP:GQ   1/1:255,255,0:185:0:99   ...
 
-      # skip non-polymorphic sites if required
-      next if($rawdata[4] eq '.' && $ONLYPOLYMORPHIC);
+  # Example: VCF file and information
+  # Index        0     1   2  3   4   5    6      7              8      9        n
+  # Headers      CHROM POS ID REF ALT QUAL FILTER INFO           FORMAT Sample_1 Sample_n
+  # Position_1   Chr1  25  .  G   C   284  .      DP=45;MQ0F=0;â€¦ GT:DP  0/0:45  ...¦
+  # Position_N   ChrN  N   .  ...
 
-      # skip indels
+      # skip non-polymorphic (constant) sites, if required
+      next if($rawdata[4] eq '.' && $only_polymorphic);
+
+      # skip indels (should have been removed previously)
       next if($rawdata[3] =~ m/[A-Z]{2,}/ || $rawdata[4] =~ m/[A-Z]{2,}/); 
    
       # skip multiallelic SNPs
       #next if(length($rawdata[4]) > 1);
 
-      # find out which data fields to parse
+      # find out which data fields to parse, 
+      # this is done every row to avoid errors in VCF files where format might change
       my @sampledata = split(/:/,$rawdata[$COLUMNFIRSTSAMPLE-1]);
       foreach my $sd (0 .. $#sampledata)
       {
@@ -191,9 +452,11 @@ while(<VCF>)
       ($genomic_samples,$gbs_samples) = (0,0);
       foreach $idx ( $COLUMNFIRSTSAMPLE .. $lastsampleidx )
       {
-        #0/0:0,255,255:93:0:99
-        #1/1:255,255,0:185:0:99
-        #0/1:236,0,237:66:7:9
+
+      # 0/0:0,255,255:93:0:99 --> homozygous reference (REF) allele
+      # 1/1:255,255,0:185:0:99 --> homozygous alternative (ALT) allele
+      # 0/1:236,0,237:66:7:9 --> heterozygous
+
         my @sampledata = split(/:/,$rawdata[$idx]); #print "$rawdata[$idx]\n";
         $genotype = $sampledata[$GENOTYPECOLUMNFORMAT];
         $depthcover = $sampledata[$DEPTHCOLUMNFORMAT]; #die "$genotype $depthcover\n";
@@ -201,7 +464,7 @@ while(<VCF>)
 
         if($genotype eq '0/0')
         {
-          if($depthcover >= $MINDEPTHCOVERPERSAMPLE){ 
+          if($depthcover >= $mindepth){ 
             $allele = $rawdata[3]; 
             if(defined($genomic_samples{$samplenames[$sample]})){ $genomic_samples++ }
             else{ $gbs_samples++ }
@@ -210,7 +473,7 @@ while(<VCF>)
         }
         elsif($genotype eq '1/1')
         {
-          if($depthcover >= $MINDEPTHCOVERPERSAMPLE){ 
+          if($depthcover >= $mindepth){ 
             $allele = (split(/,/,$rawdata[4]))[0]; 
             if(defined($genomic_samples{$samplenames[$sample]})){ $genomic_samples++ }
             else{ $gbs_samples++ }
@@ -219,7 +482,7 @@ while(<VCF>)
         }
         elsif($genotype eq '2/2')
         {
-          if($depthcover >= $MINDEPTHCOVERPERSAMPLE){ 
+          if($depthcover >= $mindepth){ 
             $allele = (split(/,/,$rawdata[4]))[1]; 
             if(defined($genomic_samples{$samplenames[$sample]})){ $genomic_samples++ }
             else{ $gbs_samples++ }
@@ -228,19 +491,19 @@ while(<VCF>)
         }
         elsif($genotype eq '3/3')
         {
-          if($depthcover >= $MINDEPTHCOVERPERSAMPLE){       
+          if($depthcover >= $mindepth){       
             $allele = (split(/,/,$rawdata[4]))[2]; 
             if(defined($genomic_samples{$samplenames[$sample]})){ $genomic_samples++ }
             else{ $gbs_samples++ }
           }
           else{ if(!$genomic_samples{$samplenames[$sample]}){ $missing++ } }
         }
-        else # missing or htzg are treated as missing all the same
+        else # missing or heterozygous are treated as missing all the same way
         {
           if(!$genomic_samples{$samplenames[$sample]}){ $missing++ }
         }
    
-        if($missing > $MAXMISSINGSAMPLES)
+        if($missing > $maxmissing)
         {
           $badSNP = 1;
           last;
@@ -258,9 +521,9 @@ while(<VCF>)
          $badSNP = 1;
       } 
 
-      # make sure monomorphic sites are skipped
-      if(scalar(keys(%nts)) < 2 && $ONLYPOLYMORPHIC){ $badSNP = 1 }
-      
+      # make sure monomorphic sites are skipped (if it was required)
+      if(scalar(keys(%nts)) < 2 && $only_polymorphic){ $badSNP = 1 }
+     
       if(!$badSNP)
       {
         if($sample != $n_of_samples)
@@ -272,19 +535,26 @@ while(<VCF>)
         $subgenome = 'NA';
         foreach $code (keys(%chrcodes))
         {
-          if($rawdata[0] =~ /$chrcodes{$code}/){
+          if($rawdata[0] =~ m/$chrcodes{$code}/){
             $subgenome = $code;
             last;
           }
         }
 
-        $snpname = "$rawdata[0]_$rawdata[1]";
-        $corr_snpname = $snpname;
+        # SNP name in master subgenome
+	$snpname = "$rawdata[0]_$rawdata[1]";
+	$corr_snpname = $snpname; #default: same SNP name
+
+	#print "$snpname\n" if($snpname =~ m/13393792/);
 
         if($subgenome ne $master_ref)
-        {
+        { 
           # translate coords to master frame using syntenic positions
-          if($synmap_fwd{$snpname}){ $corr_snpname = $synmap_fwd{$snpname} }
+          if($synmap_fwd{$snpname})
+          { 
+            $corr_snpname = $synmap_fwd{$snpname};
+            # sequence[sample] set by default earlier
+          }
           elsif($synmap_rev{$snpname})
           {
             $corr_snpname = $synmap_rev{$snpname};
@@ -293,13 +563,22 @@ while(<VCF>)
               $sequence[$sample] = $revcomp{$sequence[$sample]}
             }
           }
-          else{ next }
-        }
+          else{ next } 
 
-        $chr = (split(/_/,$corr_snpname))[0];
+	  #print "sec $snpname\n";
+
+        } else { # make sure only syntenic positions are taken 
+
+          next if(!defined($synmap_master{ "$rawdata[0]_$rawdata[1]" })); 
+          #print "mas $rawdata[0]_$rawdata[1]\n";
+        }	
+
+	#print "$snpname\n" if($snpname =~ m/13393792/);
+	($chr, $pos) = split(/_/,$corr_snpname); #print "$chr $pos $snpname\n" if($snpname =~ m/13393792/);
         foreach $sample (0 .. $lastsample)
         {
-          $MSA{$corr_snpname}{$subgenome}[$sample] .= $sequence[$sample];
+          # save sequence to MSA temp file
+          print MSA "$chr\t$pos\t$sample\t$subgenome\t$sequence[$sample]\n";	
 
           # save stats of missing data
           if($sequence[$sample] eq 'N'){
@@ -312,10 +591,17 @@ while(<VCF>)
 
         if($corr_snpname ne $snpname){
           $corr2snpname{$corr_snpname} .= "$snpname,";
+	  #print "($snpname $corr_snpname -> $corr2snpname{$corr_snpname})\n";
         }
   
+        # count total and variable loci	
         if(scalar(keys(%nts)) > 1){ $n_var_loci++ }
-        $n_of_loci++;
+        $n_of_loci++;  
+
+        # print to log	
+	if($n_of_loci % 10_000 == 0){
+          warn "# number of loci read from VCF: $n_of_loci\n";
+	}
       }   
    }
    elsif($rawdata[0] eq '#CHROM')
@@ -329,6 +615,8 @@ while(<VCF>)
    }
 }  
 close(VCF);
+
+close(MSA); 
 
 # print some stats
 #warn "\n# loci mapped per subgenome and chromosome\n";
@@ -357,54 +645,192 @@ close(VCF);
 #}
 #print STDERR "\n\n";
 
-# print sorted valid loci
-my @sorted_snpnames =
-    map  { $_->[0] }
-    sort { $a->[1] <=> $b->[1] || $a->[2] <=> $b->[2] }
-    map  { [$_ , /^$chrcodes{$master_ref}/ , /_(\d+)/ ] } keys(%MSA);
+## sort SNPs ahead of printing the final multiple sequence alignment (MSA),
+## keys in %MSA look like Bd2_44989455-sgBsta-s4
 
-foreach $snpname (@sorted_snpnames)
+# sort in several steps:
+# return SNP name ie Bd2_44989455 , [Note: it will be repeated]
+# sort by chr then coord ,
+# extract tuple [ Bd2_44989455, 2, 44989455 ] (split(/\-sg/))[0]
+
+print "# sorting SNPs by position ...\n";
+$onelinercmd = "$SORTEXE -k1,1 -k2,2n $MSA_tmp_file > $MSA_sort_file";
+system("$onelinercmd");
+if($? != 0) 
 {
-  printf(STDERR "# aligned position: %s : %s\n",
-    $snpname,$corr2snpname{$snpname}||'');
+  die "# ERROR: failed sorting SNPs ($onelinercmd)\n"
 }
+
+#my %MSA;
+#my @sorted_snpnames =
+#  map  { $_->[0] } 
+#  sort { $a->[1] <=> $b->[1] || $a->[2] <=> $b->[2] }
+#  map  { [ (split(/\-sg/))[0] , /^$chrcodes{$master_ref}/ , /_(\d+)\-sg/ ] } keys(%MSA);
+
+## print sorted valid loci,
+## these are syntenic positions that nonetheless can have missing secondary subgenome data
+my (%seen);    
+open(SORTMSA,"<",$MSA_sort_file) ||
+  die "# ERROR: cannot read $MSA_sort_file\n";
+while(<SORTMSA>)
+{
+  ($chr,$pos,$sample,$subgenome,$allele) = split(/\t/,$_);
+  $snpname = $chr .'_' . $pos;
+  next if(defined($seen{ $snpname }));
+
+  printf(STDERR "# aligned position: %s : %s\n",
+    $snpname,
+    $corr2snpname{$snpname} || '');
+  $seen{ $snpname } = 1;
+}
+close(SORTMSA);
 
 printf(STDERR "# number of valid loci=$n_of_loci\n");
 
-if(!$ONLYPOLYMORPHIC)
+if(!$only_polymorphic)
 {
   printf(STDERR "# number of polymorphic loci=$n_var_loci\n");
 } warn "\n";
 
-# print sorted VCF SNPs
-open(OUTFILE,">$outfilename") || die "# cannot create output file $outfilename, exit\n";
 
+
+## print sorted SNPs in FASTA format
+
+my (%tmp_fh, %tmp_fname, %block);
+my ($fh, $prev_snpname, $block, $sample_allele);
+
+# open separate files for each sample,subgenome tuple
 foreach $sample (0 .. $lastsample)
 {
   foreach $subgenome (sort keys(%chrcodes))
   {
-    my ($total,$noNs) = (0,0);
+    my $tmpFASTAfile = "_$sample.$subgenome.fasta";
 
+    # open file and save filehandle in hash
+    $tmp_fh{ $sample }{ $subgenome } = FileHandle->new(">$tmpFASTAfile");
+    $tmp_fname{ $sample }{ $subgenome } = $tmpFASTAfile;
+    $fh = $tmp_fh{ $sample }{ $subgenome };
+
+    # print FASTA header
     $shortname = $vcf_real_names{$samplenames[$sample]} || $samplenames[$sample];
-
-    print OUTFILE ">$shortname\_$subgenome\n";
-
-    foreach $snpname (@sorted_snpnames)
-    {
-      $allele = $MSA{$snpname}{$subgenome}[$sample] || 'N';
-      if($allele ne 'N'){ $noNs++ }
-
-      print OUTFILE $allele;
-      $total++;
-    }
-    print OUTFILE "\n";
-
-    #printf(STDERR "# %s_%s variants: %d / %d (%1.3f)\n",
-    #  $shortname,$subgenome,$noNs,$total,$noNs/$total);
+    print $fh ">$shortname\_$subgenome\n";
   }
 }
 
-close(OUTFILE);
+# parse sorted SNPs, one block at a time
+$prev_snpname = '';
+open(SORTMSA,"<",$MSA_sort_file) ||
+  die "# ERROR: cannot read $MSA_sort_file\n";
+while(<SORTMSA>)
+{
+  chomp;
+  ($chr,$pos,$sample,$subgenome,$allele) = split(/\t/,$_);
+  $snpname = $chr .'_' . $pos; #print;
+
+  # previous block complete
+  if($snpname ne $prev_snpname && $prev_snpname ne '') {
+
+    # process previous block, fill missing data with Ns    
+    foreach $sample (0 .. $lastsample)
+    {
+      foreach $subgenome (sort keys(%chrcodes))
+      {
+        $fh = $tmp_fh{ $sample }{ $subgenome };	      
+        $sample_allele = $block{$sample}{$subgenome} || 'N';
+        print $fh $sample_allele;     
+
+	$stats{$sample}{$subgenome}{'total'}++;
+        if($sample_allele ne 'N') 
+        {
+          $stats{$sample}{$subgenome}{'noN'}++
+        }	
+      }
+    }
+
+    %block = ();
+  }
+
+  # add SNP data to the current block
+  $block{$sample}{$subgenome} = $allele;
+
+  # record name of previous SNP 
+  $prev_snpname = $snpname;
+}
+close(SORTMSA);
+
+# take care of last block
+foreach $sample (0 .. $lastsample)
+{
+  foreach $subgenome (sort keys(%chrcodes))
+  {
+    $fh = $tmp_fh{ $sample }{ $subgenome };
+    $sample_allele = $block{$sample}{$subgenome} || 'N';
+    print $fh $sample_allele;
+    
+    $stats{$sample}{$subgenome}{'total'}++;
+    if($sample_allele ne 'N')
+    {
+      $stats{$sample}{$subgenome}{'noN'}++
+    }
+  }
+}
+
+# add final newline, print stats & close FASTA temp files 
+foreach $sample (0 .. $lastsample)
+{
+  foreach $subgenome (sort keys(%chrcodes))
+  {
+    $fh = $tmp_fh{ $sample }{ $subgenome };
+    print $fh "\n";
+    $fh->close();
+
+    # stats
+    $shortname = $vcf_real_names{$samplenames[$sample]} || $samplenames[$sample];
+    printf(STDERR "# %s_%s variants: %d / %d\n",
+      $shortname,
+      $subgenome,
+      $stats{$sample}{$subgenome}{'noN'} || 0,
+      $stats{$sample}{$subgenome}{'total'});
+  }
+}
 
 
+## concat temp FASTA files and produce single output FASTA file
+print "# concatenating temp files ...\n";
+$onelinercmd = "$CATEXE ";
+foreach $sample (0 .. $lastsample)
+{
+  foreach $subgenome (sort keys(%chrcodes))
+  {
+    $onelinercmd .= "$tmp_fname{ $sample }{ $subgenome } "
+  }
+}
 
+$onelinercmd .= " > $outfilename";
+system("$onelinercmd");
+if($? != 0)
+{
+  die "# ERROR: failed concatenating temp files ($onelinercmd)\n"
+}
+
+#my ($total,$noNs) = (0,0);
+#if($allele ne 'N'){ $noNs++ }
+#$total++;
+     
+#printf(STDERR "# %s_%s variants: %d / %d (%1.3f)\n",
+#  $shortname,$subgenome,$noNs,$total,$noNs/$total);
+
+# untie hashes and delete temp files
+untie(%synmap_fwd);
+untie(%synmap_rev);
+untie(%synmap_master);
+
+unlink($fwd_tmp_file, $rev_tmp_file, $mas_tmp_file);
+unlink($MSA_tmp_file);
+foreach $sample (0 .. $lastsample)
+{
+  foreach $subgenome (sort keys(%chrcodes))
+  {
+    unlink($tmp_fname{ $sample }{ $subgenome })
+  }
+}
