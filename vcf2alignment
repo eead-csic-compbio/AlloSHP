@@ -32,7 +32,7 @@ my $OUTFILEFORMAT          = 'fasta'; # other formats in @validformats (phylip, 
 # first guess of key VCF columns, adjusted in real time below
 my $COLUMNFIRSTSAMPLE      = 9; # integer, Column number (0/1-based) with the first sample in the VCF file
 my $GENOTYPECOLUMNFORMAT   = 0; # column count 0-based in the VCF file
-my $DEPTHCOLUMNFORMAT      = 1; # ??????????????????????????????????
+my $DEPTHCOLUMNFORMAT      = 1; # column count 0-based in the VCF file
 
 # edit if they are installed elsewhere and not in path
 my $GZIPEXE  = 'gzip'; 
@@ -153,18 +153,18 @@ if($filename =~ /\.gz$/ || $magic eq "\x1f\x8b") { # compressed input
       ."# please check $BZIP2EXE is installed\n";
   }
 } else{ open(VCF,'<',$filename) }
-  
+
+# Example: VCF file and information
+# Index        0     1   2  3   4   5    6      7              8      9        n
+# Headers      CHROM POS ID REF ALT QUAL FILTER INFO           FORMAT Sample_1 Sample_n
+# Position_1   Chr1  25  .  G   C   284  .      DP=45;MQ0F=0;... GT:DP  0/0:45   ...
+# Position_N   ChrN  N   .  ...
+
 while(<VCF>) {  
   chomp($_);
   my @rawdata = split(/\t/,$_);
 
   if($n_of_samples > 0) {
-
-  # Example: VCF file and information
-  # Index	 0     1   2  3   4   5    6      7              8      9        n
-  # Headers	 CHROM POS ID REF ALT QUAL FILTER INFO           FORMAT Sample_1 Sample_n
-  # Position_1   Chr1  25  .  G   C   284  .      DP=45;MQ0F=0;... GT:DP  0/0:45   ...
-  # Position_N   ChrN  N   .  ...
 
     # skip non-polymorphic (constant) sites, if required
     next if($rawdata[4] eq '.' && $only_polymorphic);
