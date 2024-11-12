@@ -7,6 +7,7 @@ use File::Temp qw/ tempdir /;
 use FindBin '$Bin';
 use lib "$Bin/lib";
 use Memory::Usage;
+use Resources qw/ get_time_RAM /;
 
 # Takes two genome assemblies (A & B) in FASTA format and computes a Whole-Genome Alignment (WGA).
 # By default uses Cgaln for the alignments, which is single-threaded, . 
@@ -302,12 +303,19 @@ print "# BED: $outBEDfile\n";
 print "# LOG: $outLOGfile\n";
 print "# PDF: $outPDFfile\n\n";
 
+open(LOG,"<",$outLOGfile) || die "# EXIT: cannot read $outLOGfile\n";
+while(<LOG>) {
+  if(/^# (valid blocks: \d+ unique positions: \d+)/){ 
+    print "## WGA summary: $1\n";
+  }
+}
+close(LOG);
 
 # 4) summary of resources 
 $mu->record('end');
 
-print "\n\n\n## time and memory used (Kb):\n"; 
-$mu->dump();
+printf("\n\n\n# time used (s): %d memory used (Mb): %2.1f\n",
+  get_time_RAM($mu->report()));
 
 
 

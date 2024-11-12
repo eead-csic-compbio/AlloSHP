@@ -2,6 +2,10 @@
 use strict;
 use warnings;
 use Getopt::Std;
+use FindBin '$Bin';
+use lib "$Bin/lib";
+use Memory::Usage;
+use Resources qw/ get_time_RAM /;
 
 # Converts an input VCF file, with might be GZIP/BZIP2 compressed, into a  
 # multiple sequence alignment (MSA) and produces a list of 1-based 
@@ -109,6 +113,9 @@ my %vcf_real_names; # To shorten sample names in output alignment
 my %genomic_samples;# Deprecated: Set samples which should not count as missing data.
                     # Deprecated: For instance, we used it to leave outgroups out of these calculations,
                     # Deprecated: as their WGS reads are significantly deeper than GBS/RNAseq samples 
+
+my $mu = Memory::Usage->new();
+$mu->record('start');
 
 ## parse config file
 open(CONFIG,"<$configfile") || die "# cannot read $configfile\n";
@@ -373,3 +380,8 @@ foreach $sample (0 .. $lastsample) {
   }
 }
 
+# summary of resources
+$mu->record('end');
+
+printf("\n\n\n# time used (s): %d memory used (Mb): %2.1f\n",
+  get_time_RAM($mu->report()));

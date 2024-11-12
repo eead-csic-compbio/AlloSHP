@@ -4,6 +4,10 @@ use warnings;
 use Getopt::Std;
 use DB_File;
 use FileHandle;
+use FindBin '$Bin';
+use lib "$Bin/lib";
+use Memory::Usage;
+use Resources qw/ get_time_RAM /;
 
 $|=1;
 
@@ -142,6 +146,9 @@ my (@samplenames,@MSA,%MSAref,%stats,%refallele,%refstrand);
 my ($snpname,$badSNP,$shortname,$magic,%contigstats);
 my ($coord,$subgenome,$code,$corr_snpname,$chr,$pos);
 my (%corr2snpname,%synfiles);
+
+my $mu = Memory::Usage->new();
+$mu->record('start');
 
 # variables to create tied hashes which are BDB under the hood 
 my (%synmap_fwd,%synmap_rev,%synmap_master);
@@ -716,4 +723,10 @@ foreach $sample (0 .. $lastsample) {
 
 foreach $dipsp (keys(%mapcoordfiles)) {
   unlink( $synfiles{ $dipsp } );
-}  
+}
+
+# summary of resources
+$mu->record('end');
+
+printf("\n\n\n# time used (s): %d memory used (Mb): %2.1f\n",
+  get_time_RAM($mu->report()));
