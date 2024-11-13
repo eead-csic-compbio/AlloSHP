@@ -66,7 +66,8 @@ Note that the steps below can be run in one go as follows:
 WGAs must be computed to find syntenic segments among the reference genomes available for read mapping.
 By default this uses [CGaln](https://github.com/rnakato/Cgaln),
 which requires the input sequences to be [soft-masked](https://genomevolution.org/wiki/index.php/Masked) ahead.
-In our example we set *B. distachyon* as the master reference genome for being the best quality assembly at hand.
+In our example we set *B. distachyon* as the master reference genome for being the best quality assembly at hand
+(see 2.3 below).
 In this we now find out syntenic segments on the other genomes, defined as secondary genomes (*B. stacei*). 
 Each individual reference is hence considered a **subgenome** to which reads map:
 
@@ -108,12 +109,12 @@ This produces the following output:
 
 The most important result files are the 0-based **BED** list of syntenic positions, which will be used in the last step,
 and the **PDF** dotplot, which requires `gnuplot` in your syste, which must be inspected to assess the quality of
-the WGA. 
+the WGA. Note that flags -I and -C can be used to tweak the WGA parameters after inspection of the dotplot.
 
-Alternatively, the GSAlign WGA algorithm can be invoked as follows:
+Alternatively, the GSAlign WGA algorithm can be invoked as follows, adding optionally flag -G to
+adapt the default parameters to your genomes of interest:
  
     ./WGA -A sample_data/Bdis.fna.gz -B sample_data/Bsta.fna.gz -g
-
 
 ![whole-genome alignment plot](./pics/dotplot.png)
 *Figure 1. Example WGA dotplot.* A good WGA dotplot will have long diagonal runs of aligned genome regions instead of clouds.
@@ -133,7 +134,7 @@ A report log file with valid 1-based coordinates (-l) is saved to be used in the
 
 Script `vcf2synteny` puts it all together and produces an alignment in FASTA format:
  
-    perl vcf2synteny -v sample_data/BdisBd2_BstaChr01.vcf.gz -c sample_data/config.synteny.tsv -l BdisBd2_BstaChr01.vcf.log \
+    ./vcf2synteny -v sample_data/BdisBd2_BstaChr01.vcf.gz -c sample_data/config.synteny.tsv -l BdisBd2_BstaChr01.vcf.log \
 			-d 5 -m 3 -r Bdis -o BdisBd2_BstaChr01.DP5.M3.synteny.fasta
 
 Note that a different config file is now used (see example 
