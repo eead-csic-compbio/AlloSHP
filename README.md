@@ -5,7 +5,7 @@ genome references. It requires FASTA and [VCF](https://en.wikipedia.org/wiki/Var
 produces multiple sequence alignments of subgenomes that make up polyploids.
 
 **Authors**
-Rubén Sancho (1,2), Bruno Contreras Moreira (1,3)
+Rubén Sancho (1,2), Pilar Catalán (2), Bruno Contreras Moreira (1,3)
 
 1. Estación Experimental de Aula Dei-CSIC, Zaragoza, Spain
 2. Escuela Politécnica Superior de Huesca, U.Zaragoza, Spain
