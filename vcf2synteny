@@ -76,7 +76,7 @@ if(($opts{'h'})||(scalar(keys(%opts))==0)) {
   print "-r master reference genome                 (example: -r Bdis)\n";
   print "-d min depth of called SNPs                (optional, example: -d 3, default -d $mindepth)\n";
   print "-m max missing samples                     (optional, example: -m 10, default -m $maxmissing\n";
-  print "-f output format                           (optional, example: -f nexus, default -f $outformat)\n";
+# print "-f output format                           (optional, example: -f nexus, default -f $outformat)\n";
   print "-1 syntenic coords are 1-based             (optional, 0-based/BED by default, WGA in -c config.synteny.tsv)\n"; 
   print "-p take only polymorphic sites             (optional, by default all sites, constant and SNPs, are taken)\n";
   exit(0);
