@@ -24,7 +24,7 @@ install_GSAlign:
 	fi
 
 test:
-	perl WGA -A sample_data/Bdis.fna.gz -B sample_data/Bsta.fna.gz > BdisBd2_BstaChr01.log 2>&1 && \
+	perl WGA -c && perl WGA -A sample_data/Bdis.fna.gz -B sample_data/Bsta.fna.gz > BdisBd2_BstaChr01.log 2>&1 && \
 		perl WGA -A sample_data/Bdis.fna.gz -B sample_data/Bsta.fna.gz -g > BdisBd2_BstaChr01.g.log 2>&1 && \
 		perl vcf2alignment -v sample_data/BdisBd2_BstaChr01.vcf.gz -c sample_data/config.tsv -l BdisBd2_BstaChr01.vcf.log -d 5 -m 3 \
 			> BdisBd2_BstaChr01.DP5.M3.log 2>&1 &&\
