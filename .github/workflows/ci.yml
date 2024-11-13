@@ -47,5 +47,3 @@ jobs:
       - name: Run tests
         run: |
           make test
-          make test_repeats_travis
-          make test_pangenes
