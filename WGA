@@ -146,8 +146,15 @@ my $mu = Memory::Usage->new();
 $mu->record('start');
 
 # 1) foreach FASTA file filter out short sequences, take returned temp file
-my $filtA = filter_FASTA_sequences( $fileA, $minlenMb, $GZIPEXE, $BZIP2EXE );
-my $filtB = filter_FASTA_sequences( $fileB, $minlenMb, $GZIPEXE, $BZIP2EXE );
+my ($filtA, $chrnamesA) = filter_FASTA_sequences( $fileA, $minlenMb, $GZIPEXE, $BZIP2EXE );
+my ($filtB, $chrnamesB) = filter_FASTA_sequences( $fileB, $minlenMb, $GZIPEXE, $BZIP2EXE );
+
+# 1.1) make sure chr names are different
+foreach my $name (keys(%$chrnamesA)) {
+  if(defined($chrnamesB->{ $name })) {
+    die "# EXIT: same chromosome name ($name) found in $fileA and $fileB\n";
+  }
+}
 
 # 2) mask filtered FASTA files if required
 my $maskA = $fileA . '.sm.fasta';     
@@ -330,11 +337,13 @@ printf("\n\n\n# time used (s): %d memory used (Mb): %2.1f\n",
 # iv)  path to BZIP2 executable
 # Returns:
 # i) path to FASTA file with long sequences
+# ii) reference to hash with sequence names
 sub filter_FASTA_sequences {
   
   my ( $infile, $min_length_Mb, $gzipexe, $bzip2exe ) = @_;
 
-  my (%FASTA,@ids,$magic,$root,$name,$seq,$seqid,$length);
+  my (%FASTA,%names,@ids);
+  my ($magic,$root,$name,$seq,$seqid,$length);
   my ($n_of_sequences, $n_filtered_sequences) = (0, 0);
 
   # check input file format and open it accordingly
@@ -394,6 +403,7 @@ sub filter_FASTA_sequences {
     if($length >= $min_length_Mb * 1_000_000) { 
       print "# filter_FASTA_sequences: [passed $length bp] $FASTA{$seqid}{'NAME'}\n";
       print FILT ">$FASTA{$seqid}{'NAME'}\n$FASTA{$seqid}{'SEQ'}\n";
+      $names{$FASTA{$seqid}{'NAME'}}++;
 
     } else {
       print "# filter_FASTA_sequences: [skipped $length bp] $FASTA{$seqid}{'NAME'}\n";
@@ -402,5 +412,5 @@ sub filter_FASTA_sequences {
 
   close(FILT);
 
-  return $filtfile
+  return ($filtfile, \%names);
 }
