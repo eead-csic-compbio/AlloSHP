@@ -1,7 +1,8 @@
 # vcf2alignment
 
-Protocol to produce multiple sequence alignments out of [VCF](https://en.wikipedia.org/wiki/Variant_Call_Format)
-files which can be used for phylogenetic tree construction. 
+This protocol computes Whole Genome Alignments (WGA) to discover syntenic SNPs out of reads mapped to concatenated 
+genome references. It requires FASTA and [VCF](https://en.wikipedia.org/wiki/Variant_Call_Format) input files and 
+produces multiple sequence alignments of subgenomes that make up polyploids.
 
 **Authors**
 Rubén Sancho (1,2), Bruno Contreras Moreira (1,3)
@@ -14,11 +15,17 @@ Rubén Sancho (1,2), Bruno Contreras Moreira (1,3)
 
 <!-- flowchart -->
 
-### Software dependencies
+### Software dependencies and installation
 
 This protocol has been tested on Linux x86_64 systems, although it should also work on Mac-OSX settings.
-It requires Perl5, which should be installed on all Linux environments, plus some standard programs (gzip, bzip2).
+It requires Perl5, which should be installed on all Linux environments, plus some standard Linux utilities (gzip, sort, etc).
+It can be installed locally as follows:
 
+    git clone https://github.com/eead-csic-compbio/vcf2alignment.git
+    cd vcf2alignment
+    make install
+    # optionally, takes a couple minutes
+    make test
 
 ## 1) Input data 
 
