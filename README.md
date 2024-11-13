@@ -11,21 +11,30 @@ Rubén Sancho (1,2), Bruno Contreras Moreira (1,3)
 2. Escuela Politécnica Superior de Huesca, U.Zaragoza, Spain
 3. Fundación ARAID, Zaragoza, Spain
 
-## Pipeline overview
+## Installation
 
-<!-- flowchart -->
-
-### Software dependencies and installation
-
-This protocol has been tested on Linux x86_64 systems, although it should also work on Mac-OSX settings.
-It requires Perl5, which should be installed on all Linux environments, plus some standard Linux utilities (gzip, sort, etc).
-It can be installed locally as follows:
+While this protocol was developed on Linux x86_64 systems, it should also work on MacOS settings.
+It requires some standard Linux utilities (gzip, sort, perl, make, python3, g++, etc) and a few third-party dependencies
+which can be installed locally as follows:
 
     git clone https://github.com/eead-csic-compbio/vcf2alignment.git
     cd vcf2alignment
     make install
     # optionally, takes a couple minutes
     make test
+
+### Dependencies 
+
+|software|flag|source|notes|
+|:-------|:---|:-----|:----|
+|Cgaln|  |https://github.com/rnakato/Cgaln|requires gcc compiler|
+|GSAlign| -g |https://github.com/hsinnan75/GSAlign|requires g++ compiler|
+|Red|  |https://github.com/EnsemblGenomes/Red|requires g++ compiler|
+|Red2Ensembl.py|   |https://github.com/Ensembl/plant-scripts|requires python3|
+
+## Pipeline overview
+
+<!-- flowchart -->
 
 ## 1) Input data 
 
