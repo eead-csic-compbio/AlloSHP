@@ -31,7 +31,7 @@ which can be installed locally as follows:
 |GSAlign| -g |https://github.com/hsinnan75/GSAlign|requires g++ compiler|
 |Red|skipped with -m|https://github.com/EnsemblGenomes/Red|requires g++ compiler|
 |Red2Ensembl.py|   |https://github.com/Ensembl/plant-scripts|requires python3|
-|gnuplot|  |http://www.gnuplot.info| 
+|gnuplot|  |http://www.gnuplot.info|required for dotplots in PDF format| 
 
 ## Pipeline overview
 
@@ -108,16 +108,15 @@ This produces the following output:
 
 The most important result files are the 0-based **BED** list of syntenic positions, which will be used in the last step,
 and the **PDF** dotplot, which requires `gnuplot` in your syste, which must be inspected to assess the quality of
-the WGA. A good WGA dotplot will have long diagonal runs of aligned genome regions instead of clouds,
-like the one in the next figure.
+the WGA. 
 
 Alternatively, the GSAlign WGA algorithm can be invoked as follows:
  
     ./WGA -A sample_data/Bdis.fna.gz -B sample_data/Bsta.fna.gz -g
 
-This an example whole-genome alignment dotplot:
-![whole-genome alignment plot](./pics/dotplot.png)
 
+![whole-genome alignment plot](./pics/dotplot.png)
+*Figure 1. Example WGA dotplot.* A good WGA dotplot will have long diagonal runs of aligned genome regions instead of clouds.
 
 ### 2.2) Filtering valid positions in the VCF file
 
