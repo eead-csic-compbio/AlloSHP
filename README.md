@@ -10,6 +10,8 @@ Rubén Sancho (1,2), Pilar Catalán (2), Bruno Contreras Moreira (1,3)
 2. Escuela Politécnica Superior de Huesca, U.Zaragoza, Spain
 3. Fundación ARAID, Zaragoza, Spain
 
+[![Build Status](https://github.com/eead-csic-compbio/vcf2alignment/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/eead-csic-compbio/vcf2alignment/actions/workflows/ci.yml)
+
 ## Installation
 
 While this protocol was developed on Linux x86_64 systems, it should also work on MacOS settings.
