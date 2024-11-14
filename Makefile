@@ -23,12 +23,22 @@ install_GSAlign:
 		cd lib && git clone https://github.com/hsinnan75/GSAlign.git && cd GSAlign && make && ls bin && rm -rf test; \
 	fi
 
+test_install:
+	perl WGA -c
+
 test:
-	perl WGA -c && perl WGA -A sample_data/Bdis.fna.gz -B sample_data/Bsta.fna.gz > BdisBd2_BstaChr01.log 2>&1 && \
-		perl WGA -A sample_data/Bdis.fna.gz -B sample_data/Bsta.fna.gz -g > BdisBd2_BstaChr01.g.log 2>&1 && \
-		perl vcf2alignment -v sample_data/BdisBd2_BstaChr01.vcf.gz -c sample_data/config.tsv -l BdisBd2_BstaChr01.vcf.log -d 5 -m 3 \
+	./WGA -A sample_data/Bdis.fna.gz -B sample_data/Bsta.fna.gz && \
+		./WGA -A sample_data/Bdis.fna.gz -B sample_data/Bsta.fna.gz -g && \
+                ./vcf2alignment -v sample_data/BdisBd2_BstaChr01.vcf.gz -c sample_data/config.tsv -l BdisBd2_BstaChr01.vcf.log -d 5 -m 3 &&\
+                ./vcf2synteny -v sample_data/BdisBd2_BstaChr01.vcf.gz -c sample_data/config.synteny.tsv -l BdisBd2_BstaChr01.vcf.log \
+                        -d 5 -m 3 -r Bdis -o BdisBd2_BstaChr01.DP5.M3.synteny.fasta; \
+
+# Cgaln only, all logs saved
+demo: 
+	./WGA -A sample_data/Bdis.fna.gz -B sample_data/Bsta.fna.gz > BdisBd2_BstaChr01.log 2>&1 && \
+		./vcf2alignment -v sample_data/BdisBd2_BstaChr01.vcf.gz -c sample_data/config.tsv -l BdisBd2_BstaChr01.vcf.log -d 5 -m 3 \
 			> BdisBd2_BstaChr01.DP5.M3.log 2>&1 &&\
-		perl vcf2synteny -v sample_data/BdisBd2_BstaChr01.vcf.gz -c sample_data/config.synteny.tsv -l BdisBd2_BstaChr01.vcf.log \
+		./vcf2synteny -v sample_data/BdisBd2_BstaChr01.vcf.gz -c sample_data/config.synteny.tsv -l BdisBd2_BstaChr01.vcf.log \
 			-d 5 -m 3 -r Bdis -o BdisBd2_BstaChr01.DP5.M3.synteny.fasta > BdisBd2_BstaChr01.DP5.M3.synteny.log 2>&1; \
 
 clean:
