@@ -38,7 +38,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          sudo apt-get install -y wget python3 g++-10 gnuplot-qt cpanminus
+          sudo apt-get install -y wget python3 g++-10 gnuplot-qt libdb-dev cpanminus
           cpanm Memory::Usage
           make install
           PERL5LIB=${PWD}/lib:$PERL5LIB
