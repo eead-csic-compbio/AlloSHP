@@ -24,7 +24,7 @@ install_GSAlign:
 	fi
 
 test_install:
-	./WGA -c && ./vcf2alignment && ./vcf2sinteny
+	./WGA -c && ./vcf2alignment && ./vcf2synteny
 
 test:
 	./WGA -A sample_data/Bdis.fna.gz -B sample_data/Bsta.fna.gz && \
