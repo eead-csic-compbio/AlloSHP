@@ -8,6 +8,7 @@ use File::Basename qw/ basename dirname /;
 use Cwd qw(abs_path);
 use lib abs_path( dirname(__FILE__) ) . "/lib";
 use Memory::Usage;
+use Regexp::Trie;
 use Resources qw/ get_time_RAM /;
 
 # Takes two genome assemblies (A & B) in FASTA format and computes a Whole-Genome Alignment (WGA).
@@ -39,7 +40,7 @@ my %opts;
 my ($fileA, $fileB, $minlenMb, $ncores, $softmask, $use_gsalign) = ('', '', 1.0, 4, 1, 0);
 my ($WGA_Cgaln_params, $WGA_index_params) = ('-X12000 -fc -cons', '-K11 -BS10000');
 my $WGA_GSAlign_params = '-no_vcf -one'; #-one, -sen
-my ($root, $cmd, $tempdirA, $tempdirB);
+my ($root, $cmd, $name, $tempdirA, $tempdirB, $chrcodesA, $chrcodesB);
 my ($tmpWGAfile, $WGAfile, $WGAdotfile, $WGAscriptfile);
 my ($outBEDfile, $outLOGfile, $outPDFfile);
 
@@ -153,11 +154,25 @@ my ($filtA, $chrnamesA) = filter_FASTA_sequences( $fileA, $minlenMb, $GZIPEXE, $
 my ($filtB, $chrnamesB) = filter_FASTA_sequences( $fileB, $minlenMb, $GZIPEXE, $BZIP2EXE );
 
 # 1.1) make sure chr names are different
-foreach my $name (keys(%$chrnamesA)) {
+foreach $name (keys(%$chrnamesA)) {
   if(defined($chrnamesB->{ $name })) {
     die "# EXIT: same chromosome name ($name) found in $fileA and $fileB\n";
   }
 }
+
+# 1.2) propose regex/chrcodes for config.synteny.tsv, required by vcf2synteny
+$chrcodesA = Regexp::Trie->new();
+foreach $name (keys(%$chrnamesA)) {
+  $chrcodesA->add($name);
+}
+print "\n# chrcode A example: ", $chrcodesA->regexp(), "\n";
+
+$chrcodesB = Regexp::Trie->new();
+foreach $name (keys(%$chrnamesB)) {
+  $chrcodesB->add($name);
+}
+print "# chrcode B example: ", $chrcodesB->regexp(), "\n\n";
+
 
 # 2) mask filtered FASTA files if required
 my $maskA = $fileA . '.sm.fasta';     
