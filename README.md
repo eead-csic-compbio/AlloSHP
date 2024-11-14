@@ -89,6 +89,9 @@ This produces the following output:
     # filter_FASTA_sequences: [passed 59130575 bp] Bd2
     # filter_FASTA_sequences: [passed 31564145 bp] Chr01
 
+    # chrcode A example: (?^:Bd2)
+    # chrcode B example: (?^:Chr01)
+
     ## soft-masking filtered sequences
 
     ## CGaln algorithm
@@ -149,7 +152,7 @@ Note that a different config file is now used (see example
 which also contains: 
 
 + a path to the BED file obtained in step 2.1
-+ regular expressions to match chromosome names from reference genomes used in step 2.1
++ regular expressions to match chromosome names from reference genomes used in step 2.1, can use those proposed by `WGA`
 
 The resulting multiple alignment has as many lines per sample as references, which are handled as subgenomes:
 ![Multiple alignment generated](./pics/MSA_subgenomes.sample.png)
