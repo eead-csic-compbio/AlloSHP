@@ -160,17 +160,16 @@ foreach $name (keys(%$chrnamesA)) {
 }
 
 # 1.2) propose regex/chrcodes for config.synteny.tsv, required by vcf2synteny
-$chrcodesA = Regexp::Trie->new();
-foreach $name (keys(%$chrnamesA)) {
-  $chrcodesA->add($name);
+$chrcodesA = regex4chrnames(keys(%$chrnamesA));
+$chrcodesB = regex4chrnames(keys(%$chrnamesB));
+if($chrcodesA =~ m/\|/) {
+  die "# EXIT: please rename chrs in $fileA so they share a common prefix\n";
+} if($chrcodesB =~ m/\|/) {
+  die "# EXIT: please rename chrs in $fileB so they share a common prefix\n";
+} else {
+  print "\n# chrcode A example: $chrcodesA\n";
+  print "# chrcode B example: $chrcodesB\n\n";
 }
-print "\n# chrcode A example: ", $chrcodesA->regexp(), "\n";
-
-$chrcodesB = Regexp::Trie->new();
-foreach $name (keys(%$chrnamesB)) {
-  $chrcodesB->add($name);
-}
-print "# chrcode B example: ", $chrcodesB->regexp(), "\n\n";
 
 
 # 2) mask filtered FASTA files if required
@@ -430,4 +429,29 @@ sub filter_FASTA_sequences {
   close(FILT);
 
   return ($filtfile, \%names);
+}
+
+
+# Takes 4 params:
+# i) array of chr names
+# Returns:
+# i) string with regex
+sub regex4chrnames {
+
+  my (@chrnames) = @_;
+  my $regex;
+
+  my $chrcodes = Regexp::Trie->new();
+  foreach my $name (@chrnames) {
+    $chrcodes->add($name);
+  }
+
+  # taylor the regex for our needs
+  $regex = $chrcodes->regexp();
+  $regex =~ s/\(\?\^\://;
+  $regex =~ s/\)//;
+  $regex =~ s/\[\d+\]/(\\d+)/; 
+  $regex =~ s/\d+/(\\d+)/; 
+
+  return $regex;
 }
