@@ -2,9 +2,8 @@
 use strict;
 use warnings;
 use Getopt::Std;
-use File::Basename qw/ dirname /;
-use Cwd qw(abs_path);
-use lib abs_path( dirname(__FILE__) ) . "/lib";
+use FindBin '$Bin';
+use lib "$Bin/lib";
 use Memory::Usage;
 use Resources qw/ get_time_RAM /;
 
