@@ -72,9 +72,10 @@ if(defined($opts{'c'})) {
   print " Red2Ensembl https://doi.org/10.1002/tpg2.20143\n\n";
 
   # check all required binaries and print diagnostic info
-  foreach my $exe ($GSALIGNEXE, $CGALNEXE, $REDEXE, $RED2ENS, $MAPCOORDS) { 
-    if(`$exe -h 2>&1` !~ /usage/i && `$exe -h 2>&1` !~ /input/i) { 
-      print "# ERROR: $exe not correctly installed; please run 'make'\n";
+  foreach my $exe ($GSALIGNEXE, $CGALNEXE, $REDEXE, $RED2ENS, $MAPCOORDS) {
+    $cmd = `$exe -h 2>&1`;	  
+    if($cmd !~ /usage/i && $cmd !~ /input/i) { 
+      print "# ERROR: $exe not correctly installed; please run 'make install' ($cmd)\n";
     }
   }
 
