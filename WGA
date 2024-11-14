@@ -3,9 +3,11 @@ use strict;
 use warnings;
 use Getopt::Std;
 use File::Basename;
+my $path = dirname(__FILE__);
 use File::Temp qw/ tempdir /;
 use FindBin '$Bin';
 use lib "$Bin/lib";
+use lib "$path/lib";
 use Memory::Usage;
 use Resources qw/ get_time_RAM /;
 
