@@ -89,8 +89,8 @@ This produces the following output:
     # filter_FASTA_sequences: [passed 59130575 bp] Bd2
     # filter_FASTA_sequences: [passed 31564145 bp] Chr01
 
-    # chrcode A example: (?^:Bd2)
-    # chrcode B example: (?^:Chr01)
+    # chrcode A example: Bd(\d+)
+    # chrcode B example: Chr(\d+)
 
     ## soft-masking filtered sequences
 
