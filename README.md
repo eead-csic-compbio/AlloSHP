@@ -26,6 +26,8 @@ which can be installed locally as follows:
 
 ### Dependencies 
 
+The table shows the main dependencies of this package:
+
 |software|flag|source|notes|
 |:-------|:---|:-----|:----|
 |Cgaln|  |https://github.com/rnakato/Cgaln|requires gcc compiler|
@@ -33,6 +35,10 @@ which can be installed locally as follows:
 |Red|skipped with -m|https://github.com/EnsemblGenomes/Red|requires g++ compiler|
 |Red2Ensembl.py|   |https://github.com/Ensembl/plant-scripts|requires python3|
 |gnuplot|  |http://www.gnuplot.info|required for dotplots in PDF format| 
+
+Other Linux dependencies required include: `wget python3 g++ gnuplot-qt libdb-dev` 
+
+See [ci.yml](https://github.com/eead-csic-compbio/vcf2alignment/blob/master/.github/workflows/ci.yml).
 
 ## Pipeline overview
 
