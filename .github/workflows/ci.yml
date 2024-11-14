@@ -43,6 +43,7 @@ jobs:
           make install
           PERL5LIB=${PWD}/lib:$PERL5LIB
           export PERL5LIB
+          make test_install
         shell: bash
 
       - name: Run tests
