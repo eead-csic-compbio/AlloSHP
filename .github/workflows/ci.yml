@@ -40,7 +40,7 @@ jobs:
         run: |
           sudo apt-get install -y wget python3 g++ gnuplot-qt
           make install
-          PERL5LIB=$PWD/../lib:$PERL5LIB
+          PERL5LIB=lib:$PERL5LIB
           export PERL5LIB
         shell: bash
 
