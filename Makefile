@@ -20,7 +20,7 @@ install_Cgaln:
 
 install_GSAlign:
 	if [ ! -d "lib/GSAlign" ]; then \
-		cd lib && git clone https://github.com/hsinnan75/GSAlign.git && cd GSAlign && make & rm -rf test; \
+		cd lib && git clone https://github.com/hsinnan75/GSAlign.git && cd GSAlign && make && ls lib/GSAlign/bin && rm -rf test; \
 	fi
 
 test:
