@@ -38,11 +38,11 @@ jobs:
 
       - name: Install dependencies
         run: |
-          sudo apt-get install -y wget python3 g++ gnuplot-qt cpanminus
+          sudo apt-get install -y wget python3 g++-10 gnuplot-qt cpanminus
           cpanm Memory::Usage
           make install
-          PERL5LIB=${GITHUB_WORKSPACE}/lib:$PERL5LIB
-          export PERL5LIB
+          #PERL5LIB=${GITHUB_WORKSPACE}/lib:$PERL5LIB
+          #export PERL5LIB
         shell: bash
 
       - name: Run tests
