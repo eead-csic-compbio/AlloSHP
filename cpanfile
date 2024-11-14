@@ -1,5 +1,5 @@
 requires 'Getopt::Std';
-requires 'File::Temp;
+requires 'File::Temp';
 requires 'File::Basename';
 requires 'Cwd';
 requires 'Memory::Usage';
