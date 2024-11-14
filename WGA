@@ -11,13 +11,13 @@ use Memory::Usage;
 use Resources qw/ get_time_RAM /;
 
 # Takes two genome assemblies (A & B) in FASTA format and computes a Whole-Genome Alignment (WGA).
-# By default uses Cgaln for the alignments, which is single-threaded, . 
+# By default uses Cgaln for the alignments, which is single-threaded, but can also use GSAlign (-g). 
 # Returns:
 # 1) BED file matching 0-based coordinates from A to B 
 # 2) LOG file (text) with WGA stats
 # 3) PDF file with dotplot of WGA for quality control [requires gnuplot in the system, not provided]
 
-# Bruno Contreras Moreira, Ruben Sancho EEAD-CSIC 2024
+# Bruno Contreras Moreira, Ruben Sancho EEAD-CSIC 2017-2024
 
 # external binaries assumed to be available, edit if non-standard locations
 my $GZIPEXE    = 'gzip'; 
