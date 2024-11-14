@@ -4,9 +4,9 @@ use strict;
 use warnings;
 use Getopt::Std;
 use File::Temp qw/ tempdir /;
-use File::Basename qw/ basename dirname /; 
-use Cwd qw(abs_path);
-use lib abs_path( dirname(__FILE__) ) . "/lib";
+use File::Basename qw/ basename /; 
+use FindBin '$Bin';
+use lib "$Bin/lib";
 use Memory::Usage;
 use Regexp::Trie;
 use Resources qw/ get_time_RAM /;
@@ -26,7 +26,6 @@ my $BZIP2EXE   = 'bzip2';
 my $GNUPLOTEXE = "gnuplot";
 
 # binaries that should be installed with make 
-my $Bin = abs_path( dirname(__FILE__) );
 my $GSALIGNEXE = "$Bin/lib/GSAlign/bin/GSAlign";
 my $CGALNEXE   = "$Bin/lib/Cgaln/Cgaln";
 my $CINDEXEXE  = "$Bin/lib/Cgaln/maketable";
