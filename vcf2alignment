@@ -16,7 +16,7 @@ use Resources qw/ get_time_RAM /;
 
 # Note: Chromosome names of genomes in VCF file must be different.
 
-# Bruno Contreras, Ruben Sancho EEAD-CSIC 2017-2024
+# Bruno Contreras, Ruben Sancho EEAD-CSIC 2014-2024
 
 my %IUPACdegen = (  
   'AG'=>'R', 'GA'=>'R', 'CT'=>'Y', 'TC'=>'Y',

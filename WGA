@@ -18,7 +18,7 @@ use Resources qw/ get_time_RAM /;
 # 2) LOG file (text) with WGA stats
 # 3) PDF file with dotplot of WGA for quality control [requires gnuplot in the system, not provided]
 
-# Bruno Contreras Moreira, Ruben Sancho EEAD-CSIC 2017-2024
+# Bruno Contreras Moreira, Ruben Sancho EEAD-CSIC 2014-2024
 
 # external binaries assumed to be available, edit if non-standard locations
 my $GZIPEXE    = 'gzip'; 
