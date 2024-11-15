@@ -42,7 +42,7 @@ demo:
 			-d 5 -m 3 -r Bdis -o BdisBd2_BstaChr01.DP5.M3.synteny.fasta > BdisBd2_BstaChr01.DP5.M3.synteny.log 2>&1; \
 
 clean:
-	rm -rf Bdis* _Cgalnidx		
+	rm -rf Bdis* sample_data/Bdis.fna.gz.sm.* sample_data/Bsta.fna.gz.sm.fasta _Cgalnidx		
 
 
 
