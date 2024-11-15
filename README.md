@@ -94,6 +94,9 @@ This produces the following output:
 
     ## soft-masking filtered sequences
 
+    # filtered file A: sample_data/Bdis.fna.gz.sm.fasta
+    # filtered file B: sample_data/Bsta.fna.gz.sm.fasta
+
     ## CGaln algorithm
 
 

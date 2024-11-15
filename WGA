@@ -168,7 +168,7 @@ if($chrcodesA =~ m/\|/) {
   die "# EXIT: please rename chrs in $fileB so they share a common prefix\n";
 } else {
   print "\n# chrcode A example: $chrcodesA\n";
-  print "# chrcode B example: $chrcodesB\n\n";
+  print "# chrcode B example: $chrcodesB\n";
 }
 
 
@@ -198,10 +198,15 @@ if($softmask == 1) {
     }
   }
 
+  unlink($filtA,$filtB);
+
 } else {
   $maskA = $filtA;
   $maskB = $filtB;  
 }
+
+print "# filtered file A: $maskA\n";
+print "# filtered file B: $maskB\n\n";
 
 # 3) compute WGA
 
