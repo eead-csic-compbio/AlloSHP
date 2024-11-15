@@ -129,8 +129,11 @@ adapt the default parameters to your genomes of interest:
  
     ./WGA -A sample_data/Bdis.fna.gz -B sample_data/Bsta.fna.gz -g
 
+![whole-genome alignment plot](./pics/Bdis.fna.gz.Bsta.fna.gz_Cgaln_-K11_-BS10000_-X12000_-fc_-cons.dot.png)
+*Figure 1. WGA dotplot resulting from Cgaln alignment of two homologous chromosomes.*
+
 ![whole-genome alignment plot](./pics/dotplot.png)
-*Figure 1. Example WGA dotplot.* A good WGA dotplot will have long diagonal runs of aligned genome regions instead of clouds.
+*Figure 2. Multi-chromosome WGA dotplot.* A good WGA dotplot will have long diagonal runs of aligned genome regions instead of clouds.
 
 ### 2.2) Filtering valid positions in the VCF file
 
@@ -141,7 +144,6 @@ Note this requires a config file that matches sample names in the VCF file to th
 A report log file with valid 1-based coordinates (-l) is saved to be used in the last step:
 
     ./vcf2alignment -v sample_data/BdisBd2_BstaChr01.vcf.gz -c sample_data/config.tsv -l BdisBd2_BstaChr01.vcf.log -d 5 -m 3
-
 
 ### 2.3) Producing a multiple sequence alignment of polyploid subgenomes
 
@@ -157,9 +159,72 @@ which also contains:
 + a path to the BED file obtained in step 2.1
 + regular expressions to match chromosome names from reference genomes used in step 2.1, can use those proposed by `WGA`
 
-The resulting multiple alignment has as many lines per sample as references, which are handled as subgenomes:
-![Multiple alignment generated](./pics/MSA_subgenomes.sample.png)
+This produces the following output:
 
+    # computing Bdis.Bsta.coords.positions.tsv (3 steps)
+
+    # master reference: Bdis
+    # secondary references: Bsta
+    # synteny files (SYNTENYZEROBASED=1): 
+    # Bsta : Bdis.Bsta.coords.positions.tsv...
+    # total positions=780747
+
+    # decompressing VCF file with GZIP
+    # number of samples found=6
+    # number of loci read from VCF: 10000
+    ...
+    # number of loci read from VCF: 780000
+    # sorting SNPs by position ...
+    # aligned position: Bd2_8991545 : Chr01_4671897,
+    # aligned position: Bd2_8991546 : Chr01_4671898,
+    ...
+    # aligned position: Bd2_51018397 : Chr01_7785782,
+    # number of valid loci=781827
+    # number of polymorphic loci=9769
+
+    # Bdis_ABR2_Bdis variants: 1080 / 780747
+    # Bdis_ABR2_Bsta variants: 8991 / 780747
+    # Bdis_Bd21Control_Bdis variants: 1080 / 780747
+    # Bdis_Bd21Control_Bsta variants: 4048 / 780747
+    # Bhyb_Bhyb26_Bdis variants: 1076 / 780747
+    # Bhyb_Bhyb26_Bsta variants: 758944 / 780747
+    # Bhyb_ABR113_Bdis variants: 1010 / 780747
+    # Bhyb_ABR113_Bsta variants: 692978 / 780747
+    # Bsta_ABR114_Bdis variants: 17 / 780747
+    # Bsta_ABR114_Bsta variants: 745965 / 780747
+    # Bsta_TE4.3_Bdis variants: 0 / 780747
+    # Bsta_TE4.3_Bsta variants: 773119 / 780747
+    # concatenating temp files ...
+
+    # time used (s): 107 memory used (Mb): 658.1
+
+The resulting multiple sequence alignment (MSA) has as many lines per sample as references, which are handled as subgenomes.
+The first 200 positions of the MSA derived from the sample data looks as follows:
+
+    >Bdis_ABR2_Bdis
+    NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNTCNNNNANNCNNNNNNNNNNNNNNNCNTNNNNTNNNNNNNNNNNNNGNTNNNNNTNNGGCNNNNNNNNNNNNNNGANANCC
+    >Bdis_ABR2_Bsta
+    ATCTCGCGGCTGCCCCCCCGAGTTCGGAGGACCACCGGCCTCGCCGGGCCTCCACGTCGTGGCCACTGCTTCGGCAACGCACTGCTGACCTCACCGCTGCCGTCGCACTGGCAAACGGGTCAGCAAATCAAGCGCGCTGCGTGTCGTCNCGTCTCGGGCCATGCCGCTTTTCATCTGGCCGCCCTGGTTGCGCGACACCC
+    >Bdis_Bd21Control_Bdis
+    NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNTCNNNNANNCNNNNNNNNNNNNNNNCNTNNNNTNNNNNNNNNNNNNGNTNNNNNTNNGGCNNNNNNNNNNNNNNGANANCC
+    >Bdis_Bd21Control_Bsta
+    NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
+    >Bhyb_Bhyb26_Bdis
+    NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNTCNNNNANNCNNNNNNNNNNNNNNNCNTNNNNTNNNNNNNNNNNNNGNTNNNNNTNNGGCNNNNNNNNNNNNNNGANANCC
+    >Bhyb_Bhyb26_Bsta
+    ATCTCGCGGCTGCCCCCCCGAGTTCGGAGGACCACCGGCCTCGCCGGGCCTCCACGTCGTGGCCACTGCTTCGGCAACGCACTGCTGACCTCACCGCTGCCGTCGCACTGGCAAACGGGTCAGCAAATCAAGCGCGCTGCGTGTCNTCGCGTCTCGGGCCATGCCGCTTTTCATCTGGCCGCCCTGGTTGCGCGACACCC
+    >Bhyb_ABR113_Bdis
+    NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
+    >Bhyb_ABR113_Bsta
+    NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
+    >Bsta_ABR114_Bdis
+    NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNGNTNNNNNTNNGGCNNNNNNNNNNNNNNGANANCC
+    >Bsta_ABR114_Bsta
+    ATCTCGCGGCTGCCCCCCCGAGTTCGGAGGACCACCGGCCTCGCCGGGCCTCCACGTCGTGGCCACTGCTTCGGCAACGCACTGCTGACCTCACCGCTGCCGTCGCACTGGCAAACGGGTCAGCAAATCAAGCGCGCTGCGTGTCGTCGCGTCTCGGGCCATGCCGCTTTTCATCTGGCCGCCCTGGTTGCGCGACACCC
+   >Bsta_TE4.3_Bdis
+   NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
+   >Bsta_TE4.3_Bsta
+   NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNAATCAAGCGCGCTGCGTGTCGTCGCGTCTCGGGCCATGCCGCTTTTCATCTGGCCGCCCTGGTTGCGCGACACCC
 
 
 ## 3) Citation
