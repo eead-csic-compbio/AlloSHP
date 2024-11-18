@@ -24,6 +24,17 @@ which can be installed locally as follows:
     # optionally, takes a couple minutes
     make test
 
+### Troubleshooting: conda environment
+
+Should the standard installation instructions fail, you might want to try the following conda approach:
+
+    conda create --name vcf2alignment
+    conda activate vcf2alignment
+    conda install -c conda-forge cxx-compiler perl-db_file git gnuplot     
+    git clone https://github.com/eead-csic-compbio/vcf2alignment.git
+    cd vcf2alignment
+    make install # currently only Cgaln supported
+
 ### Dependencies 
 
 The table shows the main dependencies of this package:
