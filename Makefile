@@ -18,11 +18,16 @@ install_Cgaln:
 		cd lib && git clone https://github.com/rnakato/Cgaln.git && cd Cgaln && make && rm -f *.fasta *.o; \
 	fi
 
-install_GSAlign:
+install_GSAlign: download_GSAlign compile_GSAlign
+
+download_GSAlign:
 	if [ ! -d "lib/GSAlign" ]; then \
-		cd lib && git clone https://github.com/hsinnan75/GSAlign.git && cd GSAlign && rm -rf test;\
-		-make;\
+		cd lib && git clone https://github.com/hsinnan75/GSAlign.git && cd GSAlign && rm -rf test; \
 	fi
+
+# allowed to fail, cannot compile with g++ within conda due to conflicting memcpy@GLIBC 
+compile_GSAlign: 
+	-cd lib/GSAlign && make	
 
 test_install:
 	./WGA -c && ./vcf2alignment && ./vcf2synteny
