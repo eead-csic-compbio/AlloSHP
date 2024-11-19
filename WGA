@@ -8,7 +8,6 @@ use File::Basename qw/ basename /;
 use FindBin '$Bin';
 use lib "$Bin/lib";
 use Memory::Usage;
-use Regexp::Trie;
 use Resources qw/ get_time_RAM /;
 
 # Takes two genome assemblies (A & B) in FASTA format and computes a Whole-Genome Alignment (WGA).
@@ -31,6 +30,8 @@ my $CGALNEXE   = "$Bin/lib/Cgaln/Cgaln";
 my $CINDEXEXE  = "$Bin/lib/Cgaln/maketable";
 my $REDEXE     = "$Bin/lib/Red/bin/Red";
 my $RED2ENS    = "$Bin/utils/Red2Ensembl.py";
+
+# utilities shipping with script
 my $ALN2FASTA  = "$Bin/utils/aln2fasta.pl";
 my $FASTA2DOT  = "$Bin/utils/fasta2dot.pl";
 my $MAPCOORDS  = "$Bin/utils/mapcoords.pl";
@@ -152,6 +153,10 @@ $mu->record('start');
 my ($filtA, $chrnamesA) = filter_FASTA_sequences( $fileA, $minlenMb, $GZIPEXE, $BZIP2EXE );
 my ($filtB, $chrnamesB) = filter_FASTA_sequences( $fileB, $minlenMb, $GZIPEXE, $BZIP2EXE );
 
+if(scalar(keys(%$chrnamesA)) == 0 || scalar(keys(%$chrnamesB)) == 0) {
+    die "\n# EXIT: all sequences to short, exit\n";
+}
+
 # 1.1) make sure chr names are different
 foreach $name (keys(%$chrnamesA)) {
   if(defined($chrnamesB->{ $name })) {
@@ -163,14 +168,13 @@ foreach $name (keys(%$chrnamesA)) {
 $chrcodesA = regex4chrnames(keys(%$chrnamesA));
 $chrcodesB = regex4chrnames(keys(%$chrnamesB));
 if($chrcodesA =~ m/\|/) {
-  die "# EXIT: please rename chrs in $fileA so they share a common prefix\n";
+  die "# EXIT: please rename chrs in $fileA so they share a common prefix ($chrcodesA)\n";
 } if($chrcodesB =~ m/\|/) {
-  die "# EXIT: please rename chrs in $fileB so they share a common prefix\n";
+  die "# EXIT: please rename chrs in $fileB so they share a common prefix ($chrcodesB)\n";
 } else {
   print "\n# chrcode A example: $chrcodesA\n";
   print "# chrcode B example: $chrcodesB\n";
 }
-
 
 # 2) mask filtered FASTA files if required
 my $maskA = $fileA . '.sm.fasta';     
@@ -438,25 +442,26 @@ sub filter_FASTA_sequences {
 
 
 # Takes 4 params:
-# i) array of chr names
+# i) array of chr names that should be prefix\d+
 # Returns:
 # i) string with regex
 sub regex4chrnames {
 
   my (@chrnames) = @_;
-  my $regex;
+  my (%prefix, $name, $regex);
 
-  my $chrcodes = Regexp::Trie->new();
-  foreach my $name (@chrnames) {
-    $chrcodes->add($name);
+  foreach $name (@chrnames) {
+    if($name =~ m/(\S+?)\d+/) { 
+      $prefix{$1}++
+    }
   }
 
-  # taylor the regex for our needs
-  $regex = $chrcodes->regexp();
-  $regex =~ s/\(\?\^\://;
-  $regex =~ s/\)//;
-  $regex =~ s/\[\d+\]/(\\d+)/; 
-  $regex =~ s/\d+/(\\d+)/; 
+  foreach $name (keys(%prefix)) {
+    $regex = "$name(\\d+) | ";
+  } 
+
+  # remove last |
+  $regex = substr($regex,0,-2);
 
   return $regex;
 }
