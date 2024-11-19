@@ -24,7 +24,7 @@ which can be installed locally as follows:
     # optionally, takes a couple minutes
     make test
 
-### Troubleshooting: conda environment
+#### Troubleshooting: conda environment
 
 Should the standard installation instructions fail, you might want to try the following conda approach:
 
@@ -93,7 +93,7 @@ Each individual reference is hence considered a **subgenome** to which reads map
 
 This produces the following output:
 
-    ## WGA -A sample_data/Bdis.fna.gz -B sample_data/Bsta.fna.gz -l 1 -m 1 -G 0 -I -K11 -BS10000 -C -X12000 -fc -cons -n 4
+    ## WGA -A sample_data/Bdis.fna.gz -B sample_data/Bsta.fna.gz -l 1 -m 1 -G 0 -I '-K11 -BS10000' -C '-X12000 -fc -cons' -n 4
 
     ## root: Bdis.fna.gz.Bsta.fna.gz_Cgaln_-K11_-BS10000_-X12000_-fc_-cons
 
@@ -133,12 +133,13 @@ This produces the following output:
 
 The most important result files are the 0-based **BED** list of syntenic positions, which will be used in the last step,
 and the **PDF** dotplot, which requires `gnuplot` in your syste, which must be inspected to assess the quality of
-the WGA. Note that flags -I and -C can be used to tweak the WGA parameters after inspection of the dotplot.
+the WGA. Note that flags `-I` and `-C` can be used to tweak the WGA parameters after inspection of the dotplot.
 
-Alternatively, the GSAlign WGA algorithm can be invoked as follows, adding optionally flag -G to
-adapt the default parameters to your genomes of interest:
+Alternatively, the GSAlign WGA algorithm can be invoked as follows, with flag `-g`:
  
     ./WGA -A sample_data/Bdis.fna.gz -B sample_data/Bsta.fna.gz -g
+
+Note that you can change the default GSAlign settings with optional flag `-G`. This might be required for your genomes of interest.
 
 ![whole-genome alignment plot](./pics/Bdis.fna.gz.Bsta.fna.gz_Cgaln_-K11_-BS10000_-X12000_-fc_-cons.dot.png)
 *Figure 1. WGA dotplot resulting from Cgaln alignment of two homologous chromosomes.*
