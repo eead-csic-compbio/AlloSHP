@@ -47,15 +47,19 @@ my $COLUMNFIRSTSAMPLE      = 9; # integer, Column number (0/1-based) with the fi
 my $GENOTYPECOLUMNFORMAT   = 0; # column count 0-based in the VCF file
 my $DEPTHCOLUMNFORMAT      = 1; # column count 0-based in the VCF file
 
-# external binaries, edit if not installed elsewhere and not in path,
-# assumes perl is in path
+# external binaries, edit if not installed elsewhere and not in path
 my $GZIPEXE  = 'gzip'; 
 my $BZIP2EXE = 'bzip2';
 my $GREPEXE  = 'grep';
 my $SORTEXE  = 'sort -T tmp_vcf2alignment_synteny/ -S 20G';
 my $JOINEXE  = 'join';
 my $UNIQEXE  = 'uniq';
-my $CATEXE = 'cat';
+my $CATEXE   = 'cat';
+my $PERLEXE  = 'perl';
+
+# utilities shipping with script
+my $RM2LINES = "$Bin/utils/rm_double_lines.pl";
+
 ########################################################################
 
 my %opts;
@@ -143,7 +147,7 @@ my ($n_of_samples,$n_of_loci,$n_var_loci) = (0,0,0);
 my ($depthcover,$missing,$genotype,$allele,$dipsp);
 my ($corr_coord,$sample,$lastsample,$idx,$lastsampleidx,$file);
 my (@samplenames,@MSA,%MSAref,%stats,%refallele,%refstrand);
-my ($snpname,$badSNP,$shortname,$magic,%contigstats);
+my ($snpname,$badSNP,$shortname,%contigstats);
 my ($coord,$subgenome,$code,$corr_snpname,$chr,$pos);
 my (%corr2snpname,%synfiles);
 
@@ -246,7 +250,7 @@ foreach $dipsp (keys(%mapcoordfiles)) {
     # sort -t '.' -k1,1 -k2,2n | uniq > tmpfile 
   
   $onelinercmd = "$GREPEXE 'valid locus' $prevlogfile | $GREPEXE -v -P \"$grepchr_ref\\d+\" " .
-    "| $GREPEXE -F $grepchr | perl -lne 'if(/($grepchr\\d+)_(\\d+)/){ printf(\"%s.%d\n\",\$1,\$2) }' " .
+    "| $GREPEXE -F $grepchr | $PERLEXE -lne 'if(/($grepchr\\d+)_(\\d+)/){ printf(\"%s.%d\n\",\$1,\$2) }' " .
     "| $SORTEXE -t '.' -k1,1 -k2,2n | $UNIQEXE > $tmpfile"; # Chr01.373933
 
   system("$onelinercmd");
@@ -265,16 +269,16 @@ foreach $dipsp (keys(%mapcoordfiles)) {
     #        chrA  posA    baseA   strandA chrB    posB    baseB   block   SNP
 
   if($zerobased == 1) {
-    $onelinercmd = "$CATEXE $mapcoordfiles{ $dipsp } | " .
-      'perl -lane \'$F[1]+=1; $F[6]+=1; print join(" ",@F[0 .. 8])\' |' .
-      "$SORTEXE -k6,6 -k7,7n | ".
-      'perl -lane \'print join(" ",@F[0,1,3,4])." $F[5].".join(" ",@F[6,8,9,10])\' ' .
+    $onelinercmd = "$CATEXE $mapcoordfiles{ $dipsp } | $PERLEXE " .
+      '-lane \'$F[1]+=1; $F[6]+=1; print join(" ",@F[0 .. 8])\' |' .
+      "$SORTEXE -k6,6 -k7,7n | $PERLEXE ".
+      '-lane \'print join(" ",@F[0,1,3,4])." $F[5].".join(" ",@F[6,8,9,10])\' ' .
       " > $tmpfile2";
 
   } else {
     $onelinercmd = "$CATEXE $mapcoordfiles{ $dipsp } | " .
-      "$SORTEXE -k6,6 -k7,7n | ".
-      'perl -lane \'print join(" ",@F[0,1,3,4])." $F[5].".join(" ",@F[6,8,9,10])\' ' .
+      "$SORTEXE -k6,6 -k7,7n | $PERLEXE ".
+      '-lane \'print join(" ",@F[0,1,3,4])." $F[5].".join(" ",@F[6,8,9,10])\' ' .
       "> $tmpfile2";
   } #chrA posA baseA strandA chrB.posB baseB block SNP
   
@@ -288,8 +292,8 @@ foreach $dipsp (keys(%mapcoordfiles)) {
   # Deprecated: 'perl -plne "s/[\s\.]/\t/g" ' ."> $synfiles{ $dipsp }"; print "$onelinercmd\n";
   # grep -w -F -f tmpfile tmpfile2 | perl -plne "s/[\s\.]/\t/g" > synfile_step3
   
-  $onelinercmd = "$GREPEXE -w -F -f $tmpfile $tmpfile2 |" .
-    'perl -plne "s/[\s\.]/\t/g" ' .
+  $onelinercmd = "$GREPEXE -w -F -f $tmpfile $tmpfile2 | $PERLEXE " .
+    '-plne "s/[\s\.]/\t/g" ' .
     "> $synfiles{ $dipsp }"; #print "$onelinercmd\n";
 
   system("$onelinercmd");
@@ -347,22 +351,6 @@ warn "\n";
 
 ## check input VCF and choose right way to parse input lines
 my ($genomic_samples,$gbs_samples); 
-open(INFILE,$filename) || die "# cannot open input file $filename, exit\n";
-sysread(INFILE,$magic,2);
-close(INFILE);
-
-if($filename =~ /\.gz$/ || $magic eq "\x1f\x8b") { # compressed input
-  printf(STDERR "# decompressing VCF file with GZIP\n");
-  open(VCF,"$GZIPEXE -dc $filename |");
-
-} elsif($filename =~ /\.bz2$/ || $magic eq "BZ") { # BZIP2 compressed input
-  if(!open(VCF,"$BZIP2EXE -dc $filename |"))
-  {
-    die "# cannot read BZIP2 compressed $filename $!\n"
-      ."# please check $BZIP2EXE is installed\n";
-  }
-}
-else{ open(VCF,'<',$filename) }
 
 # open temp file to store SNPs, will be sorted after
 open(MSA,">",$MSA_tmp_file) || 
@@ -374,6 +362,7 @@ open(MSA,">",$MSA_tmp_file) ||
 # Position_1   Chr1  25  .  G   C   284  .      DP=45;MQ0F=0;â<80>¦ GT:DP  0/0:45  ...¦
 # Position_N   ChrN  N   .  ...
 
+open(VCF,"$RM2LINES $filename |") || die "# ERROR: cannot run $RM2LINES $filename\n";
 while(<VCF>) {  
    chomp($_);
    my @rawdata = split(/\t/,$_);
