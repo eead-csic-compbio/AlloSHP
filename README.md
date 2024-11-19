@@ -211,7 +211,7 @@ This produces the following output:
     # time used (s): 107 memory used (Mb): 658.1
 
 The resulting multiple sequence alignment (MSA) has as many lines per sample as references, which are handled as subgenomes.
-The first 200 positions of the MSA derived from the sample data looks as follows:
+The first 200 positions of the MSA derived from the sample data look as follows:
 
     >Bdis_ABR2_Bdis
     NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNTCNNNNANNCNNNNNNNNNNNNNNNCNTNNNNTNNNNNNNNNNNNNGNTNNNNNTNNGGCNNNNNNNNNNNNNNGANANCC
