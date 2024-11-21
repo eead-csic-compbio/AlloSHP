@@ -41,7 +41,7 @@ my ($fileA, $fileB, $minlenMb, $ncores, $softmask, $use_gsalign) = ('', '', 1.0,
 my ($WGA_Cgaln_params, $WGA_index_params) = ('-X12000 -fc -cons', '-K11 -BS10000');
 my $WGA_GSAlign_params = '-no_vcf -one'; #-one, -sen
 my ($root, $cmd, $name, $tempdirA, $tempdirB, $chrcodesA, $chrcodesB);
-my ($tmplenfile, $tmpWGAfile, $WGAfile, $WGAdotfile, $WGAscriptfile);
+my ($lenfile, $tmpWGAfile, $WGAfile, $WGAdotfile, $WGAscriptfile);
 my ($outBEDfile, $outLOGfile, $outPDFfile);
 
 getopts('hcmgG:n:I:C:l:A:B:', \%opts);
@@ -178,8 +178,8 @@ if($chrcodesA =~ m/\|/) {
 }
 
 # 1.3) write lengths of filtered seqs to file
-$tmplenfile = basename($fileA) .'.'. basename($fileB) . '.length.tsv';
-open(LENFILE,">",$tmplenfile) || die "# cannot create $tmplenfile $!\n";
+$lenfile = basename($fileA) .'.'. basename($fileB) . '.length.tsv';
+open(LENFILE,">",$lenfile) || die "# cannot create $lenfile $!\n";
 
 foreach $name (@$chrorderA) { 
   print LENFILE "A\t$name\t$chrlenA->{$name}\n";
@@ -264,7 +264,7 @@ if($use_gsalign == 0) {
 
   } 
 
-  $cmd = "$FASTA2DOT $WGAfile $tmplenfile $WGAdotfile";
+  $cmd = "$FASTA2DOT $WGAfile $lenfile $WGAdotfile";
   system("$cmd");
   if($? != 0) {
     die "# EXIT: failed while converting FASTA to DOT ($cmd)\n";
@@ -289,12 +289,19 @@ if($use_gsalign == 0) {
 
   } else {
     # convert alignment format
-    $cmd = "$ALN2FASTA $tmpWGAfile $maskA $maskB $WGAfile $WGAdotfile";
+    $cmd = "$ALN2FASTA $tmpWGAfile $maskA $maskB $WGAfile";
     system("$cmd");
     if($? != 0) {
       die "# EXIT: failed conversion ($cmd)\n";
 
     } else {
+
+      $cmd = "$FASTA2DOT $WGAfile $lenfile $WGAdotfile";
+      system("$cmd");
+      if($? != 0) {
+        die "# EXIT: failed while converting FASTA to DOT ($cmd)\n";
+      }
+
       system("gzip -f $WGAfile");
       $WGAfile .= '.gz';
     }
