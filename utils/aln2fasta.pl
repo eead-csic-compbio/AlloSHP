@@ -11,20 +11,19 @@ use warnings;
 
 my $MINHSPLENGTH = 19; # as in Cgaln
 
-my ($alnfile,$fastafileA,$fastafileB,$outfastafile,$outdotfile);
+my ($alnfile,$fastafileA,$fastafileB,$outfastafile);
 
 if(!$ARGV[2]) { 
-  die "# usage: $0 <GSalign file.aln> <infileA.fasta> <infileB.fasta> <outfile.fasta> <outfile.dot>\n" 
+  die "# usage: $0 <GSalign file.aln> <infileA.fasta> <infileB.fasta> <outfile.fasta>\n" 
 
 }else { 
-  ($alnfile,$fastafileA,$fastafileB,$outfastafile,$outdotfile) = @ARGV 
+  ($alnfile,$fastafileA,$fastafileB,$outfastafile) = @ARGV 
 }
 
 warn "# aln file: $alnfile\n";
 warn "# infastaA: $fastafileA\n";
 warn "# infastaB: $fastafileB\n";
 warn "# FASTA file: $outfastafile\n";
-warn "# dot file: $outdotfile\n";
 warn "# \$MINHSPLENGTH = $MINHSPLENGTH\n\n";
 
 my ($block,$hsp,$n_of_chrs,$length) = (0,0,0,0);
@@ -36,7 +35,6 @@ my (%chr2numA,%chr2numB,@hsps,@dots);
 
 ## 0) create outfiles
 open(FASTA,">",$outfastafile) || die "# ERROR: cannot create $outfastafile\n";
-open(DOT,">",$outdotfile) || die "# ERROR: cannot create $outdotfile\n";
 
 ## 1) read FASTA files to get real chr names
 $n_of_chrs = 0;
@@ -73,12 +71,6 @@ warn "# number of chrs in B FASTA file: $n_of_chrs\n";
 # blocks end with:
 #**********************
 
-# dot file should look like this;
-#####{ (forward) genomeA-fasta1 genomeB-fasta1  Bl #1
-#HSP number: 105, length: 34, score: 68, score_cumulative: 12390
-#58679688        389883
-#58679721        389916
-
 open(ALN,"<",$alnfile) || die "# ERROR: cannot read $alnfile\n";
 while(<ALN>) {
 
@@ -114,18 +106,8 @@ while(<ALN>) {
         $chr2numB{ $chrB },	
         $block); 
 
-      printf(DOT "#####{ (forward) genomeA-fasta%d genomeB-fasta%d  Bl #%d\n",
-        $chr2numA{ $chrA },
-        $chr2numB{ $chrB },
-        $block);
-
     } elsif($strandA eq 'Reverse') {
       printf(FASTA "#####{ (reverse) genomeA-fasta%d genomeB-fasta%d  Bl #%d\n",
-        $chr2numA{ $chrA },
-        $chr2numB{ $chrB },
-        $block);
-
-      printf(DOT "#####{ (reverse) genomeA-fasta%d genomeB-fasta%d  Bl #%d\n",
         $chr2numA{ $chrA },
         $chr2numB{ $chrB },
         $block);
@@ -173,13 +155,7 @@ while(<ALN>) {
               $chr2numB{ $chrB },$startB,$endB,$hsp,$length,$cumulscore); 
             $hsp2print .= "$hspB\n"; 
  
-            $dot2print = sprintf("#HSP number: %d, length: %d, score: %d, score_cumulative: %d\n",
-              $hsp,$length,$length,$cumulscore);
-            $dot2print .= sprintf("%d\t%d\n%d\t%d\n",
-              $startA,$startB,$endA,$endB); 		 
-
             push(@hsps, $hsp2print);
-            push(@dots, $dot2print); 	    
           }
 
 	  # init next HSP
@@ -230,16 +206,10 @@ while(<ALN>) {
       print FASTA "$hsp2print\n";
     }
     print FASTA "#####}\n";
-
-    foreach $dot2print (reverse(@dots)) {
-      print DOT "$dot2print\n";
-    }
-    print DOT "#####}\n";
   }
 }
 close(ALN);
 
-close(DOT);
 close(FASTA);
 
 printf(STDERR "# total blocks: %d\n\n", $block);
