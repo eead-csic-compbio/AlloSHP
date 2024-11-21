@@ -21,7 +21,7 @@ warn "# lenfile: $lenfile\n";
 warn "# dotfile: $outdotfile\n";
 
 my ($chr,$hsp,$score,$length,$cumulscore,$isrev);
-my ($startA,$endA,$startB,$endB,$n_of_chrs);
+my ($startA,$endA,$startB,$endB,$n_of_chrs,$chrA,$chrB);
 my (%len,%totalen,%chrs);
 
 ## 1) parse chr lengths
@@ -61,19 +61,22 @@ while(<FASTA>) {
   if(/^####/){ 
     print DOT; 
 
-    if(/genomeA-fasta(\d+)/) {
-      $n_of_chrs = $1;      
+    if(/genomeA-fasta(\d+)\s+genomeB-fasta(\d+)/) {
+      ($chrA, $chrB) = ($1, $2); 
     }
 
-    if(/\(reverse/) { $isrev = '(revcom)' }
-    else{ $isrev = '' }  
+    if(/\(reverse/) { 
+      $isrev = '(revcom)' 
+    } else { 
+      $isrev = '' 
+    }  
 
   } elsif(/^>A_fst\d+[^:]*:(\d+)-(\d+):HSP number (\d+):score (\d+):score_cumulative (\d+)/) {
 
     ($startA,$endA,$hsp,$score,$cumulscore) = ($1,$2,$3,$4,$5);
     $length = $score/2; # ~ https://github.com/rnakato/Cgaln/blob/f006f56a88f334056263c58a0641f0fcb27645a6/NA.h#L12
 
-    foreach $chr (1 .. $n_of_chrs-1) {	    
+    foreach $chr (1 .. $chrA-1) {	    
       $startA += $len{'A'}{$chr};
       $endA += $len{'A'}{$chr};      
     }
@@ -82,7 +85,14 @@ while(<FASTA>) {
       $isrev, $hsp, $length, $score, $cumulscore);
 
   } elsif(/^>B_fst\d+:(\d+)-(\d+)/) { 
+
     ($startB,$endB) = ($1,$2);
+
+    foreach $chr (1 .. $chrB-1) {
+      $startB += $len{'B'}{$chr};
+      $endB += $len{'B'}{$chr};
+    }
+
     printf(DOT "%d\t%d\n%d\t%d\n\n",
       $startA,$startB,$endA,$endB);
 
