@@ -12,14 +12,14 @@ my ($fastafile,$outdotfile);
 if(!$ARGV[1]) { 
   die "# usage: $0 <infile.fasta> <outfile.dot>\n" 
 
-}else { 
+} else { 
   ($fastafile,$outdotfile) = @ARGV 
 }
 
 warn "# infasta: $fastafile\n";
 warn "# dot file: $outdotfile\n";
 
-my ($hsp,$length,$cumulscore);
+my ($hsp,$score,$length,$cumulscore);
 my ($startA,$endA,$startB,$endB);
 
 ## 0) create outfile
@@ -40,9 +40,11 @@ while(<FASTA>) {
 
   } elsif(/^>A_fst\d+[^:]*:(\d+)-(\d+):HSP number (\d+):score (\d+):score_cumulative (\d+)/) {
 
-    ($startA,$endA,$hsp,$length,$cumulscore) = ($1,$2,$3,$4,$5);
+    ($startA,$endA,$hsp,$score,$cumulscore) = ($1,$2,$3,$4,$5);
+    $length = $score/2; # ~ https://github.com/rnakato/Cgaln/blob/f006f56a88f334056263c58a0641f0fcb27645a6/NA.h#L12
+
     printf(DOT "#HSP number: %d, length: %d, score: %d, score_cumulative: %d\n",
-      $hsp, $length, $length, $cumulscore);
+      $hsp, $length, $score, $cumulscore);
 
   } elsif(/^>B_fst\d+:(\d+)-(\d+)/) { 
     ($startB,$endB) = ($1,$2);
