@@ -319,7 +319,7 @@ print SCRIPT<<"END";
 set terminal pdf
 set grid
 set output "$outPDFfile"
-plot "$WGAdotfile" with lines lw 5
+plot "$WGAdotfile" with lines lw 2
 unset output
 exit
 END
