@@ -41,7 +41,7 @@ my ($fileA, $fileB, $minlenMb, $ncores, $softmask, $use_gsalign) = ('', '', 1.0,
 my ($WGA_Cgaln_params, $WGA_index_params) = ('-X12000 -fc -cons', '-K11 -BS10000');
 my $WGA_GSAlign_params = '-no_vcf -one'; #-one, -sen
 my ($root, $cmd, $name, $tempdirA, $tempdirB, $chrcodesA, $chrcodesB);
-my ($tmpWGAfile, $WGAfile, $WGAdotfile, $WGAscriptfile);
+my ($tmplenfile, $tmpWGAfile, $WGAfile, $WGAdotfile, $WGAscriptfile);
 my ($outBEDfile, $outLOGfile, $outPDFfile);
 
 getopts('hcmgG:n:I:C:l:A:B:', \%opts);
@@ -149,32 +149,47 @@ if(defined($opts{'g'})) { # GSAlign
 my $mu = Memory::Usage->new();
 $mu->record('start');
 
-# 1) foreach FASTA file filter out short sequences, take returned temp file
-my ($filtA, $chrnamesA) = filter_FASTA_sequences( $fileA, $minlenMb, $GZIPEXE, $BZIP2EXE );
-my ($filtB, $chrnamesB) = filter_FASTA_sequences( $fileB, $minlenMb, $GZIPEXE, $BZIP2EXE );
+# 1) foreach FASTA file remove short sequences
+my ($filtA, $chrlenA, $chrorderA) = filter_FASTA_sequences( $fileA, $minlenMb, $GZIPEXE, $BZIP2EXE );
+my ($filtB, $chrlenB, $chrorderB) = filter_FASTA_sequences( $fileB, $minlenMb, $GZIPEXE, $BZIP2EXE );
 
-if(scalar(keys(%$chrnamesA)) == 0 || scalar(keys(%$chrnamesB)) == 0) {
-    die "\n# EXIT: all sequences to short, exit\n";
+if(scalar(keys(%$chrlenA)) == 0 || scalar(keys(%$chrlenB)) == 0) {
+    die "\n# EXIT: all sequences too short, exit\n";
 }
 
 # 1.1) make sure chr names are different
-foreach $name (keys(%$chrnamesA)) {
-  if(defined($chrnamesB->{ $name })) {
+foreach $name (keys(%$chrlenA)) {
+  if(defined($chrlenB->{ $name })) {
     die "# EXIT: same chromosome name ($name) found in $fileA and $fileB\n";
   }
 }
 
 # 1.2) propose regex/chrcodes for config.synteny.tsv, required by vcf2synteny
-$chrcodesA = regex4chrnames(keys(%$chrnamesA));
-$chrcodesB = regex4chrnames(keys(%$chrnamesB));
+$chrcodesA = regex4chrnames(keys(%$chrlenA));
+$chrcodesB = regex4chrnames(keys(%$chrlenB));
 if($chrcodesA =~ m/\|/) {
   die "# EXIT: please rename chrs in $fileA so they share a common prefix ($chrcodesA)\n";
 } if($chrcodesB =~ m/\|/) {
   die "# EXIT: please rename chrs in $fileB so they share a common prefix ($chrcodesB)\n";
+
 } else {
   print "\n# chrcode A example: $chrcodesA\n";
   print "# chrcode B example: $chrcodesB\n";
 }
+
+# 1.3) write lengths of filtered seqs to file
+$tmplenfile = basename($fileA) .'.'. basename($fileB) . '.length.tsv';
+open(LENFILE,">",$tmplenfile) || die "# cannot create $tmplenfile $!\n";
+
+foreach $name (@$chrorderA) { 
+  print LENFILE "A\t$name\t$chrlenA->{$name}\n";
+}
+foreach $name (@$chrorderB) { 
+  print LENFILE "B\t$name\t$chrlenB->{$name}\n";
+}
+
+close(LENFILE); 
+
 
 # 2) mask filtered FASTA files if required
 my $maskA = $fileA . '.sm.fasta';     
@@ -211,6 +226,7 @@ if($softmask == 1) {
 
 print "# filtered file A: $maskA\n";
 print "# filtered file B: $maskB\n\n";
+
 
 # 3) compute WGA
 
@@ -362,12 +378,13 @@ printf("\n\n\n# time used (s): %d memory used (Mb): %2.1f\n",
 # iv)  path to BZIP2 executable
 # Returns:
 # i) path to FASTA file with long sequences
-# ii) reference to hash with sequence names
+# ii) reference to hash matching PASSING sequence names to their length
+# iii) reference to array with PASSING sequence names in file order
 sub filter_FASTA_sequences {
   
   my ( $infile, $min_length_Mb, $gzipexe, $bzip2exe ) = @_;
 
-  my (%FASTA,%names,@ids);
+  my (%FASTA,%names,@ids,@order);
   my ($magic,$root,$name,$seq,$seqid,$length);
   my ($n_of_sequences, $n_filtered_sequences) = (0, 0);
 
@@ -428,7 +445,9 @@ sub filter_FASTA_sequences {
     if($length >= $min_length_Mb * 1_000_000) { 
       print "# filter_FASTA_sequences: [passed $length bp] $FASTA{$seqid}{'NAME'}\n";
       print FILT ">$FASTA{$seqid}{'NAME'}\n$FASTA{$seqid}{'SEQ'}\n";
-      $names{$FASTA{$seqid}{'NAME'}}++;
+
+      $names{$FASTA{$seqid}{'NAME'}} = $length;
+      push(@order, $FASTA{$seqid}{'NAME'});
 
     } else {
       print "# filter_FASTA_sequences: [skipped $length bp] $FASTA{$seqid}{'NAME'}\n";
@@ -437,7 +456,7 @@ sub filter_FASTA_sequences {
 
   close(FILT);
 
-  return ($filtfile, \%names);
+  return ($filtfile, \%names, \@order);
 }
 
 
