@@ -264,7 +264,7 @@ if($use_gsalign == 0) {
 
   } 
 
-  $cmd = "$FASTA2DOT $WGAfile $WGAdotfile";
+  $cmd = "$FASTA2DOT $WGAfile $tmplenfile $WGAdotfile";
   system("$cmd");
   if($? != 0) {
     die "# EXIT: failed while converting FASTA to DOT ($cmd)\n";
