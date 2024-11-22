@@ -233,9 +233,9 @@ foreach $dipsp (keys(%mapcoordfiles)) {
   }
 
   # name expected outfiles
-  $tmpfile = "list_$dipsp\_positions.coords";
-  $tmpfile2 = "list_$dipsp\_positions.coords2";
-  $synfiles{ $dipsp } = "$master_ref.$dipsp.coords.positions.tsv";
+  $tmpfile = "_list_$dipsp\_positions.coords";
+  $tmpfile2 = "_list_$dipsp\_positions.coords2";
+  $synfiles{ $dipsp } = "_$master_ref.$dipsp.coords.positions.tsv";
 
   if(-s $synfiles{ $dipsp }) { # TODO add reuseOK arg
     warn "# re-using $synfiles{ $dipsp }\n";
