@@ -51,7 +51,7 @@ my $DEPTHCOLUMNFORMAT      = 1; # column count 0-based in the VCF file
 my $GZIPEXE  = 'gzip'; 
 my $BZIP2EXE = 'bzip2';
 my $GREPEXE  = 'grep';
-my $SORTEXE  = 'sort -T tmp_vcf2alignment_synteny/ -S 20G';
+my $SORTEXE  = 'sort -S 20G';
 my $JOINEXE  = 'join';
 my $UNIQEXE  = 'uniq';
 my $CATEXE   = 'cat';
@@ -66,9 +66,10 @@ my %opts;
 my ($filename,$prevlogfile,$configfile,$outfilename,$master_ref) = ('','','','');
 my ($mindepth,$maxmissing,$only_polymorphic,$outformat) =
   ($MINDEPTHCOVERPERSAMPLE,$MAXMISSINGSAMPLES,$ONLYPOLYMORPHIC,$OUTFILEFORMAT);
+my $tmppath = '/tmp';
 my $zerobased = $SYNTENYZEROBASED;
 
-getopts('h1pv:c:o:d:m:f:r:l:', \%opts);
+getopts('h1pt:v:c:o:d:m:f:r:l:', \%opts);
 
 if(($opts{'h'})||(scalar(keys(%opts))==0)) {
   print "\nusage: $0 [options]\n\n";
@@ -83,6 +84,7 @@ if(($opts{'h'})||(scalar(keys(%opts))==0)) {
 # print "-f output format                           (optional, example: -f nexus, default -f $outformat)\n";
   print "-1 syntenic coords are 1-based             (optional, 0-based/BED by default, WGA in -c config.synteny.tsv)\n"; 
   print "-p take only polymorphic sites             (optional, by default all sites, constant and SNPs, are taken)\n";
+  print "-t path to dir for temp file               (Optional, default: -t $tmppath)\n";
   exit(0);
 } 
 
@@ -116,6 +118,15 @@ if(!defined($opts{'r'})){
   $master_ref = $opts{'r'}
 }
 
+if(defined($opts{'t'})) {
+  $tmppath = $opts{'t'};
+  if(!-d $tmppath) {
+    die "# ERROR: need valid temp path (-t)\n";
+  } else {
+    $SORTEXE .= " -T $tmppath ";
+  }  
+}
+
 if(defined($opts{'d'}) && $opts{'d'} > 0) {
   $mindepth = $opts{'d'}
 }
@@ -136,9 +147,9 @@ if(defined($opts{'1'})) {
   $zerobased = 0
 }
 
-printf(STDERR "# %s -r %s -v %s -c %s -l %s -o %s -d %d -m %d -f %s -p %d -1 %d\n\n",
+printf(STDERR "# %s -r %s -v %s -c %s -l %s -o %s -d %d -m %d -f %s -p %d -t %s -1 %d\n\n",
   $0,$master_ref,$filename,$configfile,$prevlogfile,$outfilename,
-  $mindepth,$maxmissing,$outformat,$only_polymorphic, 
+  $mindepth,$maxmissing,$outformat,$only_polymorphic,$tmppath,
   !$zerobased);
 
 ######################################################
