@@ -134,7 +134,7 @@ This produces the following output:
 The most important result files are the 0-based **BED** list of syntenic positions, which will be used in the last step,
 and the **PDF** dotplot, which requires `gnuplot` in your syste, which must be inspected to assess the quality of
 the WGA. Note that flags `-I` and `-C` can be used to tweak the WGA parameters after inspection of the dotplot.
-Also, you can use `-o` to set your own output folder.
+Also, you can use `-o` to set your own **output folder**.
 
 Alternatively, the GSAlign WGA algorithm can be invoked as follows, with flag `-g`:
  
@@ -173,7 +173,9 @@ which also contains:
 + regular expressions to match chromosome names from reference genomes used in step 2.1, can use those proposed by `WGA`
 
 Note that `vcf2synteny` performs several sort operations. With large genomes these might require local disk space to save temporary results.
-By default these are stored in `/tmp` but this can be changed with flag `-t`. 
+By default these are stored in `/tmp` but this can be changed with flag `-t`. The examples in the [Makefile](./Makefile) use `-t` 
+pointing to the same **output folder** used by `WGA`, so that all files are contained there and can be safely removed if needed.
+ 
 Anyway, this scripts produces the following output:
 
     # computing Bdis.Bsta.coords.positions.tsv (3 steps)
