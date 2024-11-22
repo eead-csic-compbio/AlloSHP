@@ -35,20 +35,20 @@ test_install:
 test:
 	./WGA -A sample_data/Bdis.fna.gz -B sample_data/Bsta.fna.gz && \
 		./WGA -A sample_data/Bdis.fna.gz -B sample_data/Bsta.fna.gz -g && \
-                ./vcf2alignment -v sample_data/BdisBd2_BstaChr01.vcf.gz -c sample_data/config.tsv -l BdisBd2_BstaChr01.vcf.log -d 5 -m 3 &&\
-                ./vcf2synteny -v sample_data/BdisBd2_BstaChr01.vcf.gz -c sample_data/config.synteny.tsv -l BdisBd2_BstaChr01.vcf.log \
-                        -d 5 -m 3 -r Bdis -o BdisBd2_BstaChr01.DP5.M3.synteny.fasta; \
+                ./vcf2alignment -v sample_data/BdisBd2_BstaChr01.vcf.gz -c sample_data/config.tsv -l Bdis.fna.gz.Bsta.fna.gz/BdisBd2_BstaChr01.vcf.log -d 5 -m 3 &&\
+                ./vcf2synteny -v sample_data/BdisBd2_BstaChr01.vcf.gz -c sample_data/config.synteny.tsv -l Bdis.fna.gz.Bsta.fna.gz/BdisBd2_BstaChr01.vcf.log \
+                        -d 5 -m 3 -r Bdis -o Bdis.fna.gz.Bsta.fna.gz/BdisBd2_BstaChr01.DP5.M3.synteny.fasta; \
 
 # Cgaln only, all logs saved
 demo: 
 	./WGA -A sample_data/Bdis.fna.gz -B sample_data/Bsta.fna.gz > BdisBd2_BstaChr01.log 2>&1 && \
-		./vcf2alignment -v sample_data/BdisBd2_BstaChr01.vcf.gz -c sample_data/config.tsv -l BdisBd2_BstaChr01.vcf.log -d 5 -m 3 \
-			> BdisBd2_BstaChr01.DP5.M3.log 2>&1 &&\
-		./vcf2synteny -v sample_data/BdisBd2_BstaChr01.vcf.gz -c sample_data/config.synteny.tsv -l BdisBd2_BstaChr01.vcf.log \
-			-d 5 -m 3 -r Bdis -o BdisBd2_BstaChr01.DP5.M3.synteny.fasta > BdisBd2_BstaChr01.DP5.M3.synteny.log 2>&1; \
+		./vcf2alignment -v sample_data/BdisBd2_BstaChr01.vcf.gz -c sample_data/config.tsv -l Bdis.fna.gz.Bsta.fna.gz/BdisBd2_BstaChr01.vcf.log -d 5 -m 3 \
+			> Bdis.fna.gz.Bsta.fna.gz/BdisBd2_BstaChr01.DP5.M3.log 2>&1 &&\
+		./vcf2synteny -v sample_data/BdisBd2_BstaChr01.vcf.gz -c sample_data/config.synteny.tsv -l Bdis.fna.gz.Bsta.fna.gz/BdisBd2_BstaChr01.vcf.log \
+			-d 5 -m 3 -r Bdis -o Bdis.fna.gz.Bsta.fna.gz/BdisBd2_BstaChr01.DP5.M3.synteny.fasta > Bdis.fna.gz.Bsta.fna.gz/BdisBd2_BstaChr01.DP5.M3.synteny.log 2>&1; \
 
 clean:
-	rm -rf Bdis* sample_data/Bdis.fna.gz.sm.* sample_data/Bsta.fna.gz.sm.fasta _Cgalnidx		
+	rm -rf Bdis* sample_data/Bdis.fna.gz.sm.* sample_data/Bsta.fna.gz.sm.fasta	
 
 
 
