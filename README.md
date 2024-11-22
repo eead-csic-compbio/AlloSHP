@@ -172,7 +172,9 @@ which also contains:
 + a path to the BED file obtained in step 2.1
 + regular expressions to match chromosome names from reference genomes used in step 2.1, can use those proposed by `WGA`
 
-This produces the following output:
+Note that `vcf2synteny` performs several sort operations. With large genomes these might require local disk space to save temporary results.
+By default these are stored in `/tmp` but this can be changed with flag `-t`. 
+Anyway, this scripts produces the following output:
 
     # computing Bdis.Bsta.coords.positions.tsv (3 steps)
 
