@@ -93,7 +93,7 @@ Each individual reference is hence considered a **subgenome** to which reads map
 
 This produces the following output:
 
-    ## WGA -A sample_data/Bdis.fna.gz -B sample_data/Bsta.fna.gz -l 1 -m 1 -G 0 -I '-K11 -BS10000' -C '-X12000 -fc -cons' -n 4
+    ## WGA -A sample_data/Bdis.fna.gz -B sample_data/Bsta.fna.gz -o Bdis.fna.gz.Bsta.fna.gz -l 1 -m 1 -G 0 -I '-K11 -BS10000' -C '-X12000 -fc -cons' -n 4
 
     ## root: Bdis.fna.gz.Bsta.fna.gz_Cgaln_-K11_-BS10000_-X12000_-fc_-cons
 
@@ -123,9 +123,9 @@ This produces the following output:
 
     ## output files:
 
-    # BED: Bdis.fna.gz.Bsta.fna.gz_Cgaln_-K11_-BS10000_-X12000_-fc_-cons.bed
-    # LOG: Bdis.fna.gz.Bsta.fna.gz_Cgaln_-K11_-BS10000_-X12000_-fc_-cons.coords.log
-    # PDF: Bdis.fna.gz.Bsta.fna.gz_Cgaln_-K11_-BS10000_-X12000_-fc_-cons.dot.pdf
+    # BED: Bdis.fna.gz.Bsta.fna.gz/Bdis.fna.gz.Bsta.fna.gz_Cgaln_-K11_-BS10000_-X12000_-fc_-cons.bed
+    # LOG: Bdis.fna.gz.Bsta.fna.gz/Bdis.fna.gz.Bsta.fna.gz_Cgaln_-K11_-BS10000_-X12000_-fc_-cons.coords.log
+    # PDF: Bdis.fna.gz.Bsta.fna.gz/Bdis.fna.gz.Bsta.fna.gz_Cgaln_-K11_-BS10000_-X12000_-fc_-cons.dot.pdf
 
     ## WGA summary: valid blocks: 54 unique positions: 8956568
 
@@ -134,6 +134,7 @@ This produces the following output:
 The most important result files are the 0-based **BED** list of syntenic positions, which will be used in the last step,
 and the **PDF** dotplot, which requires `gnuplot` in your syste, which must be inspected to assess the quality of
 the WGA. Note that flags `-I` and `-C` can be used to tweak the WGA parameters after inspection of the dotplot.
+Also, you can use `-o` to set your own output folder.
 
 Alternatively, the GSAlign WGA algorithm can be invoked as follows, with flag `-g`:
  
