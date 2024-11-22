@@ -44,7 +44,7 @@ my ($root, $cmd, $name, $tempdirA, $tempdirB, $chrcodesA, $chrcodesB);
 my ($lenfile, $tmpWGAfile, $WGAfile, $WGAdotfile, $WGAscriptfile);
 my ($outfolder, $outBEDfile, $outLOGfile, $outPDFfile);
 
-getopts('hcmgG:n:I:C:l:A:B:', \%opts);
+getopts('hcmgo:G:n:I:C:l:A:B:', \%opts);
 
 if(($opts{'h'})||(scalar(keys(%opts))==0))
 {
@@ -52,6 +52,7 @@ if(($opts{'h'})||(scalar(keys(%opts))==0))
   print "-h this message\n";
   print "-A FASTA file of genome A              (example: -A speciesA.fna[.gz])\n";
   print "-B FASTA file of genome B              (example: -B speciesB.fna[.gz])\n";
+  print "-o output folder                       (optional, default: speciesA.speciesB)\n";  
   print "-l min contig length [Mbp]             (optional, default: -l $minlenMb)\n";
   print "-m FASTA files already soft-masked     (optional, default: masked with Red\n";
   print "-n number of cores                     (optional, some tasks only, default: $ncores\n";
@@ -101,6 +102,21 @@ if(!defined($opts{'B'})) {
   $fileB = $opts{'B'}
 }
 
+if(!defined($opts{'o'})) {
+  $outfolder = basename($fileA) .'.'. basename($fileB);
+} else {
+  $outfolder = $opts{'o'};
+}
+
+if( -e $outfolder ) {
+  printf("\n# WARNING : folder '%s' exists, files might be overwritten\n\n",
+    basename($outfolder));
+} else {
+  if ( !mkdir($outfolder) ) {
+    die "# ERROR: cannot create $outfolder\n";
+  }
+}  
+
 if(defined($opts{'l'}) && $opts{'l'} >= 0 && $opts{'l'} < 1000) {
   $minlenMb = $opts{'l'}
 }
@@ -120,7 +136,7 @@ if(defined($opts{'g'})) { # GSAlign
   $root = basename($fileA) .'.'. basename($fileB) . '_GSAlign_' . $WGA_GSAlign_params;
   $root =~ s/\s+/_/g;
 
-  warn "## $0 -A $fileA -B $fileB -l $minlenMb -g $use_gsalign -G $WGA_GSAlign_params -n $ncores\n\n";
+  warn "## $0 -A $fileA -B $fileB -o $outfolder -l $minlenMb -g $use_gsalign -G $WGA_GSAlign_params -n $ncores\n\n";
 
 } else { # Cgaln
 
@@ -139,22 +155,10 @@ if(defined($opts{'g'})) { # GSAlign
   $root = basename($fileA) .'.'. basename($fileB) . '_Cgaln_' . $WGA_index_params . '_' . $WGA_Cgaln_params;
   $root =~ s/\s+/_/g;
   
-  warn "## $0 -A $fileA -B $fileB -l $minlenMb -m $softmask -G $use_gsalign -I $WGA_index_params -C $WGA_Cgaln_params -n $ncores\n\n";
+  warn "## $0 -A $fileA -B $fileB -o $outfolder -l $minlenMb -m $softmask -G $use_gsalign -I $WGA_index_params -C $WGA_Cgaln_params -n $ncores\n\n";
 }
 
-$outfolder = basename($fileA) .'.'. basename($fileB);
-warn "## output folder: $outfolder\n";
 warn "## root: $root\n\n";
-
-if( -e $outfolder ) {
-  printf("\n# WARNING : folder '%s' exists, files might be overwritten\n\n",
-    basename($outfolder));
-
-} else {
-  if ( !mkdir($outfolder) ) {
-    die "# ERROR: cannot create $outfolder\n";
-  }
-}  
 
 ######################################################
 
