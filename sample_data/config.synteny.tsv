@@ -4,6 +4,6 @@ Bhyb26.bam	Bhyb_Bhyb26	real_name
 ABR113.bam	Bhyb_ABR113	real_name
 ABR114.bam	Bsta_ABR114	real_name
 TE4-3.bam	Bsta_TE4.3	real_name
-Bsta	Bdis.fna.gz.Bsta.fna.gz/Bdis.fna.gz.Bsta.fna.gz_Cgaln_-K11_-BS10000_-X4000.bed	WGA
+Bsta	Bdis.fna.gz.Bsta.fna.gz/Bdis.fna.gz.Bsta.fna.gz_Cgaln_-K11_-BS10000_-X4000_0.25_0.05.bed	WGA
 Bdis	Bd(\d+)	chrcode
 Bsta	Chr(\d+)	chrcode
