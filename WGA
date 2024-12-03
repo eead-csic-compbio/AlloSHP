@@ -156,7 +156,7 @@ if(defined($opts{'g'})) { # GSAlign
     $WGA_Cgaln_params = $opts{'C'}
   }
 
-  if(defined($opts{'M'})) {  
+  if(defined($opts{'M'}) && $opts{'M'} =~ m/^\S+\s+\S+$/) {  
     $MAPCOORDS_params = $opts{'M'}
   }
 
