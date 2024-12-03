@@ -38,7 +38,7 @@ my $MAPCOORDS  = "$Bin/utils/mapcoords.pl";
 
 my %opts;
 my ($fileA, $fileB, $minlenMb, $ncores, $softmask, $use_gsalign) = ('', '', 1.0, 4, 1, 0);
-my ($WGA_Cgaln_params, $WGA_index_params) = ('-X12000 -fc -cons', '-K11 -BS10000');
+my ($WGA_Cgaln_params, $WGA_index_params) = ('-X4000', '-K11 -BS10000');
 my $WGA_GSAlign_params = '-no_vcf -one'; #-one, -sen
 my ($root, $cmd, $name, $tempdirA, $tempdirB, $chrcodesA, $chrcodesB);
 my ($lenfile, $tmpWGAfile, $WGAfile, $WGAdotfile, $WGAscriptfile);
