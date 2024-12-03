@@ -93,9 +93,9 @@ Each individual reference is hence considered a **subgenome** to which reads map
 
 This produces the following output:
 
-    ## WGA -A sample_data/Bdis.fna.gz -B sample_data/Bsta.fna.gz -o Bdis.fna.gz.Bsta.fna.gz -l 1 -m 1 -G 0 -I '-K11 -BS10000' -C '-X12000 -fc -cons' -n 4
+    ## ./WGA -A sample_data/Bdis.fna.gz -B sample_data/Bsta.fna.gz -o Bdis.fna.gz.Bsta.fna.gz -l 1 -m 1 -G 0 -I -K11 -BS10000 -C -X4000 -M 0.25 0.05 -n 4
 
-    ## root: Bdis.fna.gz.Bsta.fna.gz_Cgaln_-K11_-BS10000_-X12000_-fc_-cons
+    ## root: Bdis.fna.gz.Bsta.fna.gz_Cgaln_-K11_-BS10000_-X4000_0.25_0.05
 
     # filter_FASTA_sequences: [passed 59130575 bp] Bd2
     # filter_FASTA_sequences: [passed 31564145 bp] Chr01
@@ -123,9 +123,9 @@ This produces the following output:
 
     ## output files:
 
-    # BED: Bdis.fna.gz.Bsta.fna.gz/Bdis.fna.gz.Bsta.fna.gz_Cgaln_-K11_-BS10000_-X12000_-fc_-cons.bed
-    # LOG: Bdis.fna.gz.Bsta.fna.gz/Bdis.fna.gz.Bsta.fna.gz_Cgaln_-K11_-BS10000_-X12000_-fc_-cons.coords.log
-    # PDF: Bdis.fna.gz.Bsta.fna.gz/Bdis.fna.gz.Bsta.fna.gz_Cgaln_-K11_-BS10000_-X12000_-fc_-cons.dot.pdf
+    # BED: Bdis.fna.gz.Bsta.fna.gz/Bdis.fna.gz.Bsta.fna.gz_Cgaln_-K11_-BS10000_-X4000_0.25_0.05.bed
+    # LOG: Bdis.fna.gz.Bsta.fna.gz/Bdis.fna.gz.Bsta.fna.gz_Cgaln_-K11_-BS10000_-X4000_0.25_0.05.coords.log
+    # PDF: Bdis.fna.gz.Bsta.fna.gz/Bdis.fna.gz.Bsta.fna.gz_Cgaln_-K11_-BS10000_-X4000_0.25_0.05.dot.pdf
 
     ## WGA summary: valid blocks: 54 unique positions: 8956568
 
@@ -156,13 +156,13 @@ Note this requires a config file that matches sample names in the VCF file to th
 (see example [sample_data/config.tsv](https://github.com/eead-csic-compbio/vcf2alignment/blob/master/sample_data/config.tsv)).
 A report log file with valid 1-based coordinates (-l) is saved to be used in the last step:
 
-    ./vcf2alignment -v sample_data/BdisBd2_BstaChr01.vcf.gz -c sample_data/config.tsv -l BdisBd2_BstaChr01.vcf.log -d 5 -m 3
+    ./vcf2alignment -v sample_data/BdisBd2_BstaChr01.vcf.gz -c sample_data/config.tsv -l BdisBd2_BstaChr01.vcf.log.gz -d 5 -m 3
 
 ### 2.3) Producing a multiple sequence alignment of polyploid subgenomes
 
 Script `vcf2synteny` puts it all together and produces an alignment in FASTA format:
  
-    ./vcf2synteny -v sample_data/BdisBd2_BstaChr01.vcf.gz -c sample_data/config.synteny.tsv -l BdisBd2_BstaChr01.vcf.log \
+    ./vcf2synteny -v sample_data/BdisBd2_BstaChr01.vcf.gz -c sample_data/config.synteny.tsv -l BdisBd2_BstaChr01.vcf.log.gz \
 			-d 5 -m 3 -r Bdis -o BdisBd2_BstaChr01.DP5.M3.synteny.fasta
 
 Note that a different config file is now used (see example 
@@ -172,7 +172,7 @@ which also contains:
 + a path to the BED file obtained in step 2.1
 + regular expressions to match chromosome names from reference genomes used in step 2.1, can use those proposed by `WGA`
 
-Note that `vcf2synteny` performs several sort operations. With large genomes these might require local disk space to save temporary results.
+Note that `vcf2synteny` performs several sort operations. With large genomes these might require significant disk space to save temporary results.
 By default these are stored in `/tmp` but this can be changed with flag `-t`. The examples in the [Makefile](./Makefile) use `-t` 
 pointing to the same **output folder** used by `WGA`, so that all files are contained there and can be safely removed if needed.
  
@@ -183,37 +183,33 @@ Anyway, this scripts produces the following output:
     # master reference: Bdis
     # secondary references: Bsta
     # synteny files (SYNTENYZEROBASED=1): 
-    # Bsta : Bdis.Bsta.coords.positions.tsv...
-    # total positions=780747
+    # Bsta : _Bdis.Bsta.coords.positions.tsv...
+    # total positions=762307
 
     # decompressing VCF file with GZIP
     # number of samples found=6
     # number of loci read from VCF: 10000
     ...
-    # number of loci read from VCF: 780000
+    # number of loci read from VCF: 760000
     # sorting SNPs by position ...
-    # aligned position: Bd2_8991545 : Chr01_4671897,
-    # aligned position: Bd2_8991546 : Chr01_4671898,
+    # aligned position: Bd2_48166443 : Chr01_1718238,
     ...
-    # aligned position: Bd2_51018397 : Chr01_7785782,
-    # number of valid loci=781827
-    # number of polymorphic loci=9769
+    # aligned position: Bd2_58679964 : Chr01_384888,  
+    # number of valid loci=762307
+    # number of polymorphic loci=9512
 
-    # Bdis_ABR2_Bdis variants: 1080 / 780747
-    # Bdis_ABR2_Bsta variants: 8991 / 780747
-    # Bdis_Bd21Control_Bdis variants: 1080 / 780747
-    # Bdis_Bd21Control_Bsta variants: 4048 / 780747
-    # Bhyb_Bhyb26_Bdis variants: 1076 / 780747
-    # Bhyb_Bhyb26_Bsta variants: 758944 / 780747
-    # Bhyb_ABR113_Bdis variants: 1010 / 780747
-    # Bhyb_ABR113_Bsta variants: 692978 / 780747
-    # Bsta_ABR114_Bdis variants: 17 / 780747
-    # Bsta_ABR114_Bsta variants: 745965 / 780747
-    # Bsta_TE4.3_Bdis variants: 0 / 780747
-    # Bsta_TE4.3_Bsta variants: 773119 / 780747
-    # concatenating temp files ...
-
-    # time used (s): 107 memory used (Mb): 658.1
+    # Bdis_ABR2_Bdis variants: 0 / 762307
+    # Bdis_ABR2_Bsta variants: 8471 / 762307
+    # Bdis_Bd21Control_Bdis variants: 0 / 762307
+    # Bdis_Bd21Control_Bsta variants: 4048 / 762307
+    # Bhyb_Bhyb26_Bdis variants: 0 / 762307
+    # Bhyb_Bhyb26_Bsta variants: 741493 / 762307
+    # Bhyb_ABR113_Bdis variants: 0 / 762307
+    # Bhyb_ABR113_Bsta variants: 677818 / 762307
+    # Bsta_ABR114_Bdis variants: 0 / 762307
+    # Bsta_ABR114_Bsta variants: 728488 / 762307
+    # Bsta_TE4.3_Bdis variants: 0 / 762307
+    # Bsta_TE4.3_Bsta variants: 754853 / 762307
 
 The resulting multiple sequence alignment (MSA) has as many lines per sample as references, which are handled as subgenomes.
 The first 200 positions of the MSA derived from the sample data look as follows:
