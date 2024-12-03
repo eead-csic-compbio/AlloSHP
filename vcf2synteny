@@ -4,6 +4,7 @@ use warnings;
 use Getopt::Std;
 use DB_File;
 use FileHandle;
+use File::Temp qw/ tempfile /;
 use FindBin '$Bin';
 use lib "$Bin/lib";
 use Memory::Usage;
@@ -173,14 +174,10 @@ $mu->record('start');
 
 # variables to create tied hashes which are BDB under the hood 
 my (%synmap_fwd,%synmap_rev,%synmap_master);
-my $fwd_tmp_file = '_fwd.coords.db';
-my $rev_tmp_file = '_rev.coords.db';
-my $mas_tmp_file = '_mas.coords.db';
-my $MSA_tmp_file = '_msa.txt';
-my $MSA_sort_file = '_msa.sort.txt';
 
-unlink($fwd_tmp_file, $rev_tmp_file, $mas_tmp_file);
-unlink($MSA_tmp_file,$MSA_sort_file);
+my ($fhf,$fwd_tmp_file) = tempfile(SUFFIX => '_fwd.coords.db', UNLINK => 1);
+my ($fhr,$rev_tmp_file) = tempfile(SUFFIX => '_rev.coords.db', UNLINK => 1);
+my ($fhm,$mas_tmp_file) = tempfile(SUFFIX => '_mas.coords.db', UNLINK => 1);
 
 tie(%synmap_fwd,'DB_File',$fwd_tmp_file)
   || die "# EXIT : cannot create $fwd_tmp_file: $! (BerkeleyDB::Error)\n";
@@ -188,6 +185,11 @@ tie(%synmap_rev,'DB_File',$rev_tmp_file)
   || die "# EXIT : cannot create $rev_tmp_file: $! (BerkeleyDB::Error)\n"; 
 tie(%synmap_master,'DB_File',$mas_tmp_file)
   || die "# EXIT : cannot create $mas_tmp_file: $! (BerkeleyDB::Error)\n";
+
+
+# temp files for multiple sequence alignments
+my ($fhmsa, $MSA_tmp_file) = tempfile(SUFFIX => '_msa.txt'      , UNLINK => 1);
+my ($fhmss,$MSA_sort_file) = tempfile(SUFFIX => '_msa.sort.txt' , UNLINK => 1);
 
 my %vcf_real_names; # To shorten sample names in output alignment
 my %mapcoordfiles;  # Files with pre-computed syntenic genomic coords
@@ -573,6 +575,8 @@ $onelinercmd = "$SORTEXE -k1,1 -k2,2n $MSA_tmp_file > $MSA_sort_file";
 system("$onelinercmd");
 if($? != 0) {
   die "# ERROR: failed sorting SNPs ($onelinercmd)\n"
+} else {
+  unlink($MSA_tmp_file); # can be large
 }
 
 #my %MSA;
@@ -717,9 +721,6 @@ if($? != 0) {
 untie(%synmap_fwd);
 untie(%synmap_rev);
 untie(%synmap_master);
-
-unlink($fwd_tmp_file, $rev_tmp_file, $mas_tmp_file);
-unlink($MSA_tmp_file, $MSA_sort_file);
 
 foreach $sample (0 .. $lastsample) {
   foreach $subgenome (sort keys(%chrcodes)) {
