@@ -175,9 +175,9 @@ $mu->record('start');
 # variables to create tied hashes which are BDB under the hood 
 my (%synmap_fwd,%synmap_rev,%synmap_master);
 
-my ($fhf,$fwd_tmp_file) = tempfile(SUFFIX => '_fwd.coords.db', UNLINK => 1);
-my ($fhr,$rev_tmp_file) = tempfile(SUFFIX => '_rev.coords.db', UNLINK => 1);
-my ($fhm,$mas_tmp_file) = tempfile(SUFFIX => '_mas.coords.db', UNLINK => 1);
+my ($fhf,$fwd_tmp_file) = tempfile(SUFFIX => '_fwd.coords.db', UNLINK => 1, DIR => $tmppath);
+my ($fhr,$rev_tmp_file) = tempfile(SUFFIX => '_rev.coords.db', UNLINK => 1, DIR => $tmppath);
+my ($fhm,$mas_tmp_file) = tempfile(SUFFIX => '_mas.coords.db', UNLINK => 1, DIR => $tmppath);
 
 tie(%synmap_fwd,'DB_File',$fwd_tmp_file)
   || die "# EXIT : cannot create $fwd_tmp_file: $! (BerkeleyDB::Error)\n";
@@ -188,8 +188,8 @@ tie(%synmap_master,'DB_File',$mas_tmp_file)
 
 
 # temp files for multiple sequence alignments
-my ($fhmsa, $MSA_tmp_file) = tempfile(SUFFIX => '_msa.txt'      , UNLINK => 1);
-my ($fhmss,$MSA_sort_file) = tempfile(SUFFIX => '_msa.sort.txt' , UNLINK => 1);
+my ($fhmsa, $MSA_tmp_file) = tempfile(SUFFIX => '_msa.txt'      , UNLINK => 1, DIR => $tmppath);
+my ($fhmss,$MSA_sort_file) = tempfile(SUFFIX => '_msa.sort.txt' , UNLINK => 1, DIR => $tmppath);
 
 my %vcf_real_names; # To shorten sample names in output alignment
 my %mapcoordfiles;  # Files with pre-computed syntenic genomic coords
@@ -252,9 +252,9 @@ foreach $dipsp (keys(%mapcoordfiles)) {
   }
 
   # name expected outfiles
-  $tmpfile = "_list_$dipsp\_positions.coords";
-  $tmpfile2 = "_list_$dipsp\_positions.coords2";
-  $synfiles{ $dipsp } = "_$master_ref.$dipsp.coords.positions.tsv";
+  $tmpfile  = $tmppath . "/_list_$dipsp\_positions.coords";
+  $tmpfile2 = $tmppath . "/_list_$dipsp\_positions.coords2";
+  $synfiles{ $dipsp } = $tmppath . "/_$master_ref.$dipsp.coords.positions.tsv";
 
   if(-s $synfiles{ $dipsp }) { # TODO add reuseOK arg
     warn "# re-using $synfiles{ $dipsp }\n";
