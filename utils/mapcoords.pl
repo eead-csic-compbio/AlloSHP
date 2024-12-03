@@ -9,19 +9,27 @@ use strict;
 # B Contreras-Moreira, R Sancho EEAD-CSIC, Unizar, 2017-2024
 
 my $MAXMULTIBLOCKPOSITIONS = 0.25; # max ratio of mapped positions in other blocks
-my $MAXMULTIPOSITIONS      = 0.05; # max ratio of block coordinates with multiple positions
+my $MAXMULTIPOSITIONS      = 0.05; # max ratio of coordinates with multiple positions in same block
 
-my ($cgalnfile,$fastafileA,$fastafileB,$notCgaln);
+my ($maxmultbk,$maxmult,$cgalnfile,$fastafileA,$fastafileB,$notCgaln);
 
-if(!$ARGV[2]){ die "# usage: $0 <file.fasta.gz> <A fasta file> <B fasta file> [boolean, not Cgaln]\n" }
-else{ ($cgalnfile,$fastafileA,$fastafileB,$notCgaln) = @ARGV }
+if(!$ARGV[2]){ die "# usage: $0 <file.fasta.gz> <A fasta file> <B fasta file> [float MAXMULTIBLOCKPOSITIONS] [float MAXMULTIPOSITIONS] [boolean, not Cgaln]\n" }
+else{ ($cgalnfile,$fastafileA,$fastafileB,$maxmultbk,$maxmult,$notCgaln) = @ARGV }
+
+if(!defined($maxmultbk)) {
+  $maxmultbk = $MAXMULTIBLOCKPOSITIONS;
+}
+
+if(!defined($maxmult)) {
+  $maxmult = $MAXMULTIPOSITIONS;
+}
 
 if(!defined($notCgaln)) {
   $notCgaln = 0;
 }
 
-warn "# MAXMULTIPOSITIONS: $MAXMULTIPOSITIONS\n";
-warn "# MAXMULTIBLOCKPOSITIONS: $MAXMULTIBLOCKPOSITIONS\n";
+warn "# MAXMULTIPOSITIONS: $maxmult\n";
+warn "# MAXMULTIBLOCKPOSITIONS: $maxmultbk\n";
 warn "# WGA file: $cgalnfile\n";
 warn "# A FASTA file: $fastafileA\n";
 warn "# B FASTA file: $fastafileB\n";
@@ -216,7 +224,7 @@ foreach $blockid (sort {$blocks{$b}{'cumulscore'}<=>$blocks{$a}{'cumulscore'} ||
 
   # skip blocks with too many positions mapped in other blocks
   my $multiblockratio = $blocks{$blockid}{'block_overlaps'}/scalar(@{$blocks{$blockid}{'unique_positions'}});
-  next if($multiblockratio > $MAXMULTIBLOCKPOSITIONS);
+  next if($multiblockratio > $maxmultbk);
 
   # print final mapped positions
   my (@unique_positions);
@@ -234,7 +242,7 @@ foreach $blockid (sort {$blocks{$b}{'cumulscore'}<=>$blocks{$a}{'cumulscore'} ||
   }
 
   # print HQ positions and block stats
-  if($blocks{$blockid}{'multiple'}/scalar(@{$blocks{$blockid}{'unique_positions'}}) < $MAXMULTIPOSITIONS) {
+  if($blocks{$blockid}{'multiple'}/scalar(@{$blocks{$blockid}{'unique_positions'}}) < $maxmult) {
     foreach $pos (@unique_positions) {
       print "$pos\n";
     }
