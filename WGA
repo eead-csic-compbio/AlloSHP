@@ -368,9 +368,9 @@ $outBEDfile = "$outfolder/$root" . '.bed';
 $outLOGfile = "$outfolder/$root" . '.coords.log';
 
 if($use_gsalign == 0) {
-  $cmd = "$MAPCOORDS $MAPCOORDS_params $WGAfile $maskA $maskB > $outBEDfile 2> $outLOGfile";
+  $cmd = "$MAPCOORDS $WGAfile $maskA $maskB $MAPCOORDS_params > $outBEDfile 2> $outLOGfile";
 } else {
-  $cmd = "$MAPCOORDS $MAPCOORDS_params $WGAfile $maskA $maskB 1 > $outBEDfile 2> $outLOGfile";
+  $cmd = "$MAPCOORDS $WGAfile $maskA $maskB $MAPCOORDS_params 1 > $outBEDfile 2> $outLOGfile";
 }
 system("$cmd");
 if($? != 0) {
