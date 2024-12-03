@@ -55,7 +55,7 @@ demo:
 			> Bdis.fna.gz.Bsta.fna.gz/BdisBd2_BstaChr01.DP5.M3.synteny.log 2>&1; \
 
 clean:
-	rm -rf Bdis* sample_data/Bdis.fna.gz.sm.* sample_data/Bsta.fna.gz.sm.fasta _*.coords.positions.tsv _list_*_positions.coords* 
+	rm -rf Bdis* sample_data/Bdis.fna.gz.sm.* sample_data/Bsta.fna.gz.sm.fasta  
 	
 
 
