@@ -40,11 +40,12 @@ my %opts;
 my ($fileA, $fileB, $minlenMb, $ncores, $softmask, $use_gsalign) = ('', '', 1.0, 4, 1, 0);
 my ($WGA_Cgaln_params, $WGA_index_params) = ('-X4000', '-K11 -BS10000');
 my $WGA_GSAlign_params = '-no_vcf -one'; #-one, -sen
+my $MAPCOORDS_params = '0.25 0.05';
 my ($root, $cmd, $name, $tempdirA, $tempdirB, $chrcodesA, $chrcodesB);
 my ($lenfile, $tmpWGAfile, $WGAfile, $WGAdotfile, $WGAscriptfile);
 my ($outfolder, $outBEDfile, $outLOGfile, $outPDFfile);
 
-getopts('hcmgo:G:n:I:C:l:A:B:', \%opts);
+getopts('hcmgo:M:G:n:I:C:l:A:B:', \%opts);
 
 if(($opts{'h'})||(scalar(keys(%opts))==0))
 {
@@ -60,6 +61,9 @@ if(($opts{'h'})||(scalar(keys(%opts))==0))
   print "-C parameters for Cgaln aligner        (optional, default: -C '$WGA_Cgaln_params')\n";
   print "-I parameters for Cgaln indexer        (optional, default: -I '$WGA_index_params')\n";
   print "-G parameters for GSAlign aligner      (optional, default: -G '$WGA_GSAlign_params')\n";
+  print "-M parameters for utils/mapcoords.pl   (optional, default: -M '$MAPCOORDS_params' ,\n";
+  print "                                        1st: max ratio of mapped positions in other blocks,\n";
+  print "                                        2nd: max ratio of coordinates with multiple positions in same block)\n";     
   print "-c print credits and checks install    (recommended)\n";
   exit(0);
 }
@@ -152,10 +156,15 @@ if(defined($opts{'g'})) { # GSAlign
     $WGA_Cgaln_params = $opts{'C'}
   }
 
-  $root = basename($fileA) .'.'. basename($fileB) . '_Cgaln_' . $WGA_index_params . '_' . $WGA_Cgaln_params;
+  if(defined($opts{'M'})) {  
+    $MAPCOORDS_params = $opts{'M'}
+  }
+
+  $root = basename($fileA) .'.'. basename($fileB) .'_Cgaln_'. $WGA_index_params .'_'. $WGA_Cgaln_params .'_'. $MAPCOORDS_params;
   $root =~ s/\s+/_/g;
   
-  warn "## $0 -A $fileA -B $fileB -o $outfolder -l $minlenMb -m $softmask -G $use_gsalign -I $WGA_index_params -C $WGA_Cgaln_params -n $ncores\n\n";
+  warn "## $0 -A $fileA -B $fileB -o $outfolder -l $minlenMb -m $softmask -G $use_gsalign ".
+    "-I $WGA_index_params -C $WGA_Cgaln_params -M $MAPCOORDS_params -n $ncores\n\n";
 }
 
 warn "## root: $root\n\n";
@@ -359,9 +368,9 @@ $outBEDfile = "$outfolder/$root" . '.bed';
 $outLOGfile = "$outfolder/$root" . '.coords.log';
 
 if($use_gsalign == 0) {
-  $cmd = "$MAPCOORDS $WGAfile $maskA $maskB > $outBEDfile 2> $outLOGfile";
+  $cmd = "$MAPCOORDS $MAPCOORDS_params $WGAfile $maskA $maskB > $outBEDfile 2> $outLOGfile";
 } else {
-  $cmd = "$MAPCOORDS $WGAfile $maskA $maskB 1 > $outBEDfile 2> $outLOGfile";
+  $cmd = "$MAPCOORDS $MAPCOORDS_params $WGAfile $maskA $maskB 1 > $outBEDfile 2> $outLOGfile";
 }
 system("$cmd");
 if($? != 0) {
