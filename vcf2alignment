@@ -8,8 +8,8 @@ use Memory::Usage;
 use Resources qw/ get_time_RAM /;
 
 # Converts an input VCF file, with might be GZIP/BZIP2 compressed, into a  
-# multiple sequence alignment (MSA) and produces a list of 1-based 
-# valid sites considering read depth (-d) and missing data (-m).
+# multiple sequence alignment (MSA) and produces a compressed list of 1-based 
+# valid sites (-l) considering read depth (-d) and missing data (-m).
 #
 # Optionally it can output the MSA in several supported formats 
 # (check @validformats below).
@@ -40,13 +40,13 @@ my $DEPTHCOLUMNFORMAT      = 1; # column count 0-based in the VCF file
 
 # edit if they are installed elsewhere and not in path
 my $GZIPEXE  = 'gzip'; 
-my $BZIP2EXE = 'bzip2';
 
 # utilities shipping with script
 my $RM2LINES = "$Bin/utils/rm_double_lines.pl";
 
 my %opts;
 my ($filename,$configfile,$reportfilename,$outfilename) = ('','','','');
+my ($raw_reportfilename);
 my ($mindepth,$maxmissing,$only_polymorphic,$outformat) = 
   ($MINDEPTHCOVERPERSAMPLE,$MAXMISSINGSAMPLES,$ONLYPOLYMORPHIC,$OUTFILEFORMAT);
 
@@ -57,7 +57,7 @@ if(($opts{'h'})||(scalar(keys(%opts))==0)) {
   print "-h this message\n";
   print "-v input VCF file                                     (example: -v data.vcf.gz)\n";
   print "-c input TSV config file                              (example: -c config.tsv)\n";
-  print "-l output report file name, 1-based coordinates       (example: -l vcf.report.log)\n";  
+  print "-l output report file name, 1-based coordinates       (example: -l vcf.report.log.gz)\n";  
   print "-o output MSA file name                               (optional, example: -o out.fasta)\n";
   print "-d min read depth at each position for each sample    (optional, example: -d 3, default -d $mindepth)\n";
   print "-m max missing samples                                (optional, example: -m 10, default -m $maxmissing\n";
@@ -79,9 +79,15 @@ if(!defined($opts{'c'})) {
 }
 
 if(!defined($opts{'l'})) {
-  die "# ERROR: need output filename (-l)\n";
+  die "# ERROR: need valid output filename (-l vcf.report.log.gz)\n";
 } else {
-  $reportfilename = $opts{'l'}
+  if($opts{'l'} !~ /\.gz$/) {
+    die "# ERROR: need valid output filename (-l vcf.report.log.gz)\n";
+  } else {	  
+    $reportfilename = $opts{'l'};
+    $raw_reportfilename = $reportfilename;
+    $raw_reportfilename =~ s/\.gz$//;
+  }  
 }
 
 if(defined($opts{'o'})) {
@@ -110,8 +116,8 @@ warn "# $0 -v $filename -c $configfile -r $reportfilename -o $outfilename -d $mi
 
 my ($n_of_samples,$n_of_loci,$n_var_loci,$depthcover,$missing,$genotype,$allele) = (0,0,0);
 my ($corr_coord,$sample,$lastsample,$idx,$lastsampleidx,$file);
-my (@samplenames,@MSA,%MSAref,%stats,%refallele,%refstrand);
-my ($snpname,$badSNP,$shortname,%contigstats);
+my (@samplenames,@MSA,%MSAref,%stats,%refallele,%refstrand,%contigstats);
+my ($snpname,$badSNP,$shortname);
 my %vcf_real_names; # To shorten sample names in output alignment
 my %genomic_samples;# Deprecated: Set samples which should not count as missing data.
                     # Deprecated: For instance, we used it to leave outgroups out of these calculations,
@@ -144,8 +150,7 @@ close(CONFIG);
 
 
 ## create report file
-open(LOG,">",$reportfilename) || die "# ERROR: cannot create $reportfilename\n";
-
+open(LOG,">",$raw_reportfilename) || die "# ERROR: cannot create $raw_reportfilename\n";
 
 ## parse input VCF file
 my ($genomic_samples,$gbs_samples); 
@@ -369,6 +374,15 @@ foreach $sample (0 .. $lastsample) {
       $samplenames[$sample],$contig,$contigstats{$sample}{$contig}{'N'} || 0);
   }
 }
+
+close(LOG);
+
+# compress report log, these files can be > 200GB in wheat!
+system("$GZIPEXE $raw_reportfilename");
+if($? != 0) {
+  die "# EXIT: failed while compressing $raw_reportfilename\n";
+}
+
 
 # summary of resources
 $mu->record('end');
