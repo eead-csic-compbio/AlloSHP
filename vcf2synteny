@@ -25,7 +25,7 @@ $|=1;
 # Note: during benchmarks the master was B. distachyon (Bdis), while B. stacei (Bsta) 
 # and B. sylvaticum (Bsyl) were defined as secondary.
 
-# Bruno Contreras, Ruben Sancho EEAD-CSIC 2014-2024
+# Bruno Contreras, Ruben Sancho EEAD-CSIC 2014-2025
 
 
 my %IUPACdegen = (
