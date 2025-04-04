@@ -210,7 +210,7 @@ while(<VCF>) {
       }	      
       $allele = 'N'; # default 
       
-      if($genotype eq '0/0') {
+      if($genotype eq '0/0' || $genotype eq '0|0') {
         if($depthcover >= $mindepth){ 
           $allele = $rawdata[3]; 
           if(defined($genomic_samples{$samplenames[$sample]})){ $genomic_samples++ }
@@ -218,7 +218,7 @@ while(<VCF>) {
         } else { 
           if(!$genomic_samples{$samplenames[$sample]}){ $missing++ } 
         }
-      } elsif($genotype eq '1/1') {
+      } elsif($genotype eq '1/1' || $genotype eq '1|1') {
         if($depthcover >= $mindepth){ 
           $allele = (split(/,/,$rawdata[4]))[0]; 
           if(defined($genomic_samples{$samplenames[$sample]})){ $genomic_samples++ }
@@ -226,7 +226,7 @@ while(<VCF>) {
         } else { 
           if(!$genomic_samples{$samplenames[$sample]}){ $missing++ } 
         } 
-      } elsif($genotype eq '2/2') {
+      } elsif($genotype eq '2/2' || $genotype eq '2|2') {
         if($depthcover >= $mindepth){ 
           $allele = (split(/,/,$rawdata[4]))[1]; 
           if(defined($genomic_samples{$samplenames[$sample]})){ $genomic_samples++ }
@@ -235,7 +235,7 @@ while(<VCF>) {
           if(!$genomic_samples{$samplenames[$sample]}){ $missing++ } 
         }
       }
-      elsif($genotype eq '3/3') {
+      elsif($genotype eq '3/3' || $genotype eq '3|3') {
         if($depthcover >= $mindepth){     
           $allele = (split(/,/,$rawdata[4]))[2]; 
           if(defined($genomic_samples{$samplenames[$sample]})){ $genomic_samples++ }
