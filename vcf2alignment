@@ -59,7 +59,8 @@ if(($opts{'h'})||(scalar(keys(%opts))==0)) {
   print "-c input TSV config file                              (example: -c config.tsv)\n";
   print "-l output report file name, 1-based coordinates       (example: -l vcf.report.log.gz)\n";  
   print "-o output MSA file name                               (optional, example: -o out.fasta)\n";
-  print "-d min read depth at each position for each sample    (optional, example: -d 3, default -d $mindepth)\n";
+  print "-d min read depth at each position for each sample    (optional, example: -d 3, default -d $mindepth,\n"; 
+  print "                                                                 use -d 0 if VCF file lacks DP)\n";
   print "-m max missing samples                                (optional, example: -m 10, default -m $maxmissing\n";
   print "-f output format                                      (optional, example: -f nexus, default -f $outformat)\n";
   print "-p take only polymorphic sites                        (optional, by default all sites, constant and SNPs, are taken)\n";
@@ -94,7 +95,7 @@ if(defined($opts{'o'})) {
   $outfilename = $opts{'o'}
 }
 
-if(defined($opts{'d'}) && $opts{'d'} > 0) {
+if(defined($opts{'d'}) && $opts{'d'} >= 0) {
   $mindepth = $opts{'d'}
 }
 
@@ -177,15 +178,17 @@ while(<VCF>) {
     # skip multiallelic SNPs
     #next if(length($rawdata[4]) > 1);
 
-    # find out which data fields to parse
+    # find out which data fields to parse ie GT, DP
     my @sampledata = split(/:/,$rawdata[$COLUMNFIRSTSAMPLE-1]);
     foreach my $sd (0 .. $#sampledata) {
       if($sampledata[$sd] eq 'GT'){ $GENOTYPECOLUMNFORMAT = $sd; last }
       $sd++;
     }
-    foreach my $sd (0 .. $#sampledata) {
-      if($sampledata[$sd] eq 'DP'){ $DEPTHCOLUMNFORMAT = $sd; last }
-      $sd++;
+    if($mindepth > 0) {
+      foreach my $sd (0 .. $#sampledata) {
+        if($sampledata[$sd] eq 'DP'){ $DEPTHCOLUMNFORMAT = $sd; last }
+        $sd++;
+      }	
     } 
 
     my (@sequence);
@@ -199,7 +202,12 @@ while(<VCF>) {
 
       my @sampledata = split(/:/,$rawdata[$idx]); 
       $genotype = $sampledata[$GENOTYPECOLUMNFORMAT];
-      $depthcover = $sampledata[$DEPTHCOLUMNFORMAT]; 
+      if($mindepth > 0) {   
+        $depthcover = $sampledata[$DEPTHCOLUMNFORMAT]; 
+
+      } else { # in case depth is not required
+        $depthcover = 0;
+      }	      
       $allele = 'N'; # default 
       
       if($genotype eq '0/0') {
