@@ -234,8 +234,7 @@ while(<VCF>) {
         } else { 
           if(!$genomic_samples{$samplenames[$sample]}){ $missing++ } 
         }
-      }
-      elsif($genotype eq '3/3' || $genotype eq '3|3') {
+      } elsif($genotype eq '3/3' || $genotype eq '3|3') {
         if($depthcover >= $mindepth){     
           $allele = (split(/,/,$rawdata[4]))[2]; 
           if(defined($genomic_samples{$samplenames[$sample]})){ $genomic_samples++ }
@@ -243,6 +242,7 @@ while(<VCF>) {
         } else { 
           if(!$genomic_samples{$samplenames[$sample]}){ $missing++ } 
         }
+
       } else { # missing or heterozygous are treated as missing all the same way
         if(!$genomic_samples{$samplenames[$sample]}){ $missing++ }
       }
