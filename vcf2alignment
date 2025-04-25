@@ -9,7 +9,7 @@ use Resources qw/ get_time_RAM /;
 
 # Converts an input VCF file, with might be GZIP/BZIP2 compressed, into a  
 # multiple sequence alignment (MSA) and produces a compressed list of 1-based 
-# valid sites (-l) considering read depth (-d) and missing data (-m).
+# valid homozygous sites (-l) considering read depth (-d) and missing data (-m).
 #
 # Optionally it can output the MSA in several supported formats 
 # (check @validformats below).
