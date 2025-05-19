@@ -1,8 +1,8 @@
-# vcf2alignment
+# AlloSHP
 
-This protocol computes Whole Genome Alignments (WGA) to discover syntenic SNPs out of reads mapped to concatenated 
-genome references. It requires FASTA and [VCF](https://en.wikipedia.org/wiki/Variant_Call_Format) input files and 
-produces multiple sequence alignments of subgenomes that make up polyploids.
+This protocol computes Whole Genome Alignments (WGA) to discover Single Homeologous Polymorphisms (SHPs) out of reads mapped to concatenated 
+genome sequeces. It requires FASTA and [VCF](https://en.wikipedia.org/wiki/Variant_Call_Format) input files and 
+produces multiple sequence alignments of subgenomes that make up allopolyploids.
 
 Rubén Sancho (1,2), Pilar Catalán (2), Bruno Contreras Moreira (1,3)
 
@@ -10,7 +10,7 @@ Rubén Sancho (1,2), Pilar Catalán (2), Bruno Contreras Moreira (1,3)
 2. Escuela Politécnica Superior de Huesca, U.Zaragoza, Spain
 3. Fundación ARAID, Zaragoza, Spain
 
-[![Build Status](https://github.com/eead-csic-compbio/vcf2alignment/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/eead-csic-compbio/vcf2alignment/actions/workflows/ci.yml)
+[![Build Status](https://github.com/eead-csic-compbio/AlloSHP/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/eead-csic-compbio/AlloSHP/actions/workflows/ci.yml)
 
 ## Installation
 
@@ -18,8 +18,8 @@ While this protocol was developed on Linux x86_64 systems, it should also work o
 It requires some standard Linux utilities (gzip, sort, perl, make, python3, g++, etc) and a few third-party dependencies
 which can be installed locally as follows:
 
-    git clone https://github.com/eead-csic-compbio/vcf2alignment.git
-    cd vcf2alignment
+    git clone https://github.com/eead-csic-compbio/AlloSHP.git
+    cd AlloSHP
     make install
     # optionally, takes a couple minutes
     make test
@@ -28,11 +28,11 @@ which can be installed locally as follows:
 
 Should the standard installation instructions fail, you might want to try the following conda approach:
 
-    conda create --name vcf2alignment
-    conda activate vcf2alignment
+    conda create --name AlloSHP
+    conda activate AlloSHP
     conda install -c conda-forge cxx-compiler perl-db_file git gnuplot     
-    git clone https://github.com/eead-csic-compbio/vcf2alignment.git
-    cd vcf2alignment
+    git clone https://github.com/eead-csic-compbio/AlloSHP.git
+    cd AlloSHP
     make install # currently only Cgaln supported
 
 ### Dependencies 
@@ -71,9 +71,9 @@ for an example.
 
 ## 2) How to run
 
-A typical analysis involves calling three scripts: [WGA](https://github.com/eead-csic-compbio/vcf2alignment/blob/master/WGA), 
-[vcf2alignment](https://github.com/eead-csic-compbio/vcf2alignment/blob/master/WGA) and 
-[vcf2synteny](https://github.com/eead-csic-compbio/vcf2alignment/blob/master/WGA). 
+A typical analysis involves calling three scripts: [WGA](https://github.com/eead-csic-compbio/AlloSHP/blob/master/WGA), 
+[vcf2alignment](https://github.com/eead-csic-compbio/AlloSHP/blob/master/WGA) and 
+[vcf2synteny](https://github.com/eead-csic-compbio/AlloSHP/blob/master/WGA). 
 
 Note that the steps below can be run in one go as follows:
 
