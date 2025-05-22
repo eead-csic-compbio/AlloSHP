@@ -21,6 +21,9 @@ $|=1;
 # Synteny-based equivalent positions in BED format produced with script WGA.
 # These files are used to translate positions of secondary reference genomes
 # to coordinates of the master reference, which is chosen by the user.
+# Optionally a WGA BED file can be used to introduce a (diploid) outgroup for 
+# which a genome assembly is available. The abbreviation of outgroup in 
+# configsynt file is 'outg'; you can add several with outg-xxx, outg-yyy, etc
 
 # Note: during benchmarks the master was B. distachyon (Bdis), while B. stacei (Bsta) 
 # and B. sylvaticum (Bsyl) were defined as secondary.
@@ -206,9 +209,14 @@ while(my $line = <CONFIG>) {
   # Example:config.synt.tsv file
   # Sample1.sort.bam	Sample1	real_name
   # Sample2.sort.bam	Sample2	real_name
-  # GenomeB	GenomeA.GenomeB.coords.tsv.gz WGA
+  # GenomeB	GenomeA.GenomeB.coords.bed WGA
   # GenomeA	 SpA(\d+)	chrcode
-  # GenomeA      SpB(\d+)	chrcode
+  # GenomeB      SpB(\d+)	chrcode
+  # optionally if outgroup is needed
+  # outg-A	/path/to/..	WGA
+  # outg-B	/path/to/..	WGA
+  # outg-A	Os(\d+)	chrcode
+  # outg-B	Tur(\d+)	chrcode
 
   next if($line =~ m/^#/);
   chomp($line);
@@ -233,10 +241,14 @@ close(CONFIG);
 
 ## Read mapcoords files with syntenic coords and get subsets of SNP positions,
 ## takes three steps carried out with one-liners. Repeat for each 2ary diploid reference, keeping the same master genome.
-## NOTE: resulting synteny TSV files, after the three steps, contain 1-based genomics coordinates in all cases
+## NOTE: resulting synteny BED files, after the three steps, contain 1-based genomics coordinates in all cases
 my ($grepchr_ref, $grepchr,$onelinercmd, $tmpfile, $tmpfile2);
 
 foreach $dipsp (keys(%mapcoordfiles)) {
+
+  # outgroup is taken care of below	
+  next if($dipsp =~ m/^outg/);
+
   if(!$chrcodes{ $master_ref }) {
     die "# ERROR: cannot find chr regex for $master_ref in $configfile\n";
   } else {
@@ -327,6 +339,7 @@ foreach $dipsp (keys(%mapcoordfiles)) {
 
 warn "\n# master reference: $master_ref\n";
 warn "# secondary references: ".join(',',sort(keys(%synfiles)))."\n";
+warn "# outgroups: ".join(',',sort( grep{/^outg/} keys(%mapcoordfiles)))."\n";
 warn "# synteny files (SYNTENYZEROBASED=$zerobased): \n";
 
 #chrA  posA    endA    baseA   strandA chrB    posB    endB    baseB   block   SNP
@@ -487,6 +500,7 @@ while(<VCF>) {
         # check to which subgenome this SNP belongs
         $subgenome = 'NA';
         foreach $code (keys(%chrcodes)) {
+          next if($code =~ m/^outg/);
           if($rawdata[0] =~ m/$chrcodes{$code}/) {
             $subgenome = $code;
             last;
@@ -618,6 +632,8 @@ my ($fh, $prev_snpname, $block, $sample_allele);
 # open separate files for each sample,subgenome tuple
 foreach $sample (0 .. $lastsample) {
   foreach $subgenome (sort keys(%chrcodes)) {
+    next if($subgenome =~ m/^outg/);
+
     my $tmpFASTAfile = "_$sample.$subgenome.fasta";
 
     # open file and save filehandle in hash
@@ -631,7 +647,55 @@ foreach $sample (0 .. $lastsample) {
   }
 }
 
-# parse sorted SNPs, one block at a time
+# if required create separate files for outgroups also, 
+# must be in config file
+foreach $dipsp (keys(%mapcoordfiles)) {
+  next if($dipsp !~ m/^outg/);
+
+  my $tmpFASTAfile = "_$dipsp.fasta";
+  $tmp_fh{ $dipsp }{ $dipsp } = FileHandle->new(">$tmpFASTAfile");
+  $tmp_fname{ $dipsp }{ $dipsp } = $tmpFASTAfile;
+  $fh = $tmp_fh{ $dipsp }{ $dipsp };
+  print $fh ">$dipsp\n";
+}
+
+# if required, parse WGA bedfiles of outgroups in config file
+my (%outgcall);
+
+# those BED files look like this:
+## chrA  posA    endA    baseA   strandA chrB    posB    endB    baseB   block   SNP
+#Bd1     64316346        64316347        G       -       Os03    10616195        10616196        G       19      .
+#Bd1     64316338        64316339        A       -       Os03    10616203        10616204        G       19      SNP
+#Bd2     51368823        51368824        T       +       Os01    33989953        33989954        T       32      .
+#Bd2     51368826        51368827        A       +       Os01    33989956        33989957        T       32      SNP
+foreach $dipsp (keys(%mapcoordfiles)) {
+  next if($dipsp !~ m/^outg/);
+
+  open(BED,"<",$mapcoordfiles{ $dipsp }) || 
+     die "# ERROR: cannot read $mapcoordfiles{ $dipsp }\n";
+  while(<BED>) {
+    next if(/^#/);
+    my @data = split(/\t/,$_);
+    # 1-based nt
+    $outgcall{ $dipsp }{ sprintf("%s_%d",$data[0], $data[2]+1) } = $data[8];
+  }
+  close(BED);
+}
+
+# parse sorted SNPs, one block at a time,
+# two example blocks shown below
+#Bd2     48166443        0       Bsta    N
+#Bd2     48166443        1       Bsta    N
+#Bd2     48166443        2       Bsta    C
+#Bd2     48166443        3       Bsta    N
+#Bd2     48166443        4       Bsta    C
+#Bd2     48166443        5       Bsta    C
+##
+#Bd2     48166444        0       Bsta    N
+#Bd2     48166444        1       Bsta    N
+#Bd2     48166444        2       Bsta    T
+#Bd2     48166444        3       Bsta    N
+#...
 $prev_snpname = '';
 open(SORTMSA,"<",$MSA_sort_file) ||
   die "# ERROR: cannot read $MSA_sort_file\n";
@@ -640,12 +704,22 @@ while(<SORTMSA>) {
   ($chr,$pos,$sample,$subgenome,$allele) = split(/\t/,$_);
   $snpname = $chr .'_' . $pos; #print;
 
-  # previous block complete
+  # previous block complete (samples only)
   if($snpname ne $prev_snpname && $prev_snpname ne '') {
 
-    # process previous block, fill missing data with Ns    
+    # process outgroups
+    foreach $dipsp (keys(%mapcoordfiles)) {
+      next if($dipsp !~ m/^outg/);
+
+      $fh = $tmp_fh{ $dipsp }{ $dipsp };
+      $sample_allele =  $outgcall{ $dipsp }{ $snpname } || 'N';
+      print $fh $sample_allele;
+    }  
+
+    # process previous block, fill missing data with Ns
     foreach $sample (0 .. $lastsample) {
       foreach $subgenome (sort keys(%chrcodes)) {
+        next if($subgenome =~ m/^outg/);
         $fh = $tmp_fh{ $sample }{ $subgenome };	      
         $sample_allele = $block{$sample}{$subgenome} || 'N';
         print $fh $sample_allele;     
@@ -670,8 +744,20 @@ while(<SORTMSA>) {
 close(SORTMSA);
 
 # take care of last block
+
+# outgroups
+foreach $dipsp (keys(%mapcoordfiles)) {
+  next if($dipsp !~ m/^outg/);
+
+  $fh = $tmp_fh{ $dipsp }{ $dipsp };
+  $sample_allele =  $outgcall{ $dipsp }{ $snpname } || 'N';
+  print $fh $sample_allele;
+}
+
+# samples    
 foreach $sample (0 .. $lastsample) {
   foreach $subgenome (sort keys(%chrcodes)) {
+    next if($subgenome =~ m/^outg/);
     $fh = $tmp_fh{ $sample }{ $subgenome };
     $sample_allele = $block{$sample}{$subgenome} || 'N';
     print $fh $sample_allele;
@@ -684,9 +770,10 @@ foreach $sample (0 .. $lastsample) {
   }
 }
 
-# add final newline, print stats & close FASTA temp files 
+## add final newline, print stats & close FASTA temp files 
 foreach $sample (0 .. $lastsample) {
   foreach $subgenome (sort keys(%chrcodes)) {
+    next if($subgenome =~ m/^outg/);
     $fh = $tmp_fh{ $sample }{ $subgenome };
     print $fh "\n";
     $fh->close();
@@ -701,14 +788,29 @@ foreach $sample (0 .. $lastsample) {
   }
 }
 
+# outgroups
+foreach $dipsp (keys(%mapcoordfiles)) {
+  next if($dipsp !~ m/^outg/);
+
+  $fh = $tmp_fh{ $dipsp }{ $dipsp };
+  print $fh "\n";
+  $fh->close(); 
+}
 
 ## concat temp FASTA files and produce single output FASTA file
 print "# concatenating temp files ...\n";
 $onelinercmd = "$CATEXE ";
 foreach $sample (0 .. $lastsample) {
   foreach $subgenome (sort keys(%chrcodes)) {
+    next if($subgenome =~ m/^outg/);	  
     $onelinercmd .= "$tmp_fname{ $sample }{ $subgenome } "
   }
+}
+
+# outgroups
+foreach $dipsp (keys(%mapcoordfiles)) {
+  next if($dipsp !~ m/^outg/);
+  $onelinercmd .= " $tmp_fname{ $dipsp }{ $dipsp } ";
 }
 
 $onelinercmd .= " > $outfilename";
@@ -724,11 +826,19 @@ untie(%synmap_master);
 
 foreach $sample (0 .. $lastsample) {
   foreach $subgenome (sort keys(%chrcodes)) {
+    next if($subgenome =~ m/^outg/);
     unlink($tmp_fname{ $sample }{ $subgenome })
   }
 }
 
+# outgroups
 foreach $dipsp (keys(%mapcoordfiles)) {
+  next if($dipsp !~ m/^outg/);
+  unlink( $tmp_fname{ $dipsp }{ $dipsp } );
+}
+
+foreach $dipsp (keys(%mapcoordfiles)) {
+  next if($dipsp =~ m/^outg/);
   unlink( $synfiles{ $dipsp } );
 }
 
