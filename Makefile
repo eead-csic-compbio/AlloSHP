@@ -34,13 +34,14 @@ test_install:
 
 test:
 	./WGA -A sample_data/Bdis.fna.gz -B sample_data/Bsta.fna.gz && \
+	./WGA -A sample_data/Bdis.fna.gz -B sample_data/outgr_Osat.fna.gz && \
 		./WGA -A sample_data/Bdis.fna.gz -B sample_data/Bsta.fna.gz -g && \
-		./vcf2alignment -v sample_data/BdisBd2_BstaChr01.vcf.gz -c sample_data/config.tsv \
-			-l Bdis.fna.gz.Bsta.fna.gz/BdisBd2_BstaChr01.vcf.log.gz -d 5 -m 3 &&\
-                ./vcf2synteny -v sample_data/BdisBd2_BstaChr01.vcf.gz -c sample_data/config.synteny.tsv \
-			-l Bdis.fna.gz.Bsta.fna.gz/BdisBd2_BstaChr01.vcf.log.gz \
-                        -d 5 -m 3 -r Bdis -t Bdis.fna.gz.Bsta.fna.gz \
-			-o Bdis.fna.gz.Bsta.fna.gz/BdisBd2_BstaChr01.DP5.M3.synteny.fasta; \
+			./vcf2alignment -v sample_data/BdisBd2_BstaChr01.vcf.gz -c sample_data/config.tsv \
+				-l BdisBd2_BstaChr01.vcf.log.gz -d 5 -m 3 &&\
+                	./vcf2synteny -v sample_data/BdisBd2_BstaChr01.vcf.gz -c sample_data/config.outg.synteny.tsv \
+				-l BdisBd2_BstaChr01.vcf.log.gz \
+                        	-d 5 -m 3 -r Bdis -t Bdis.fna.gz.Bsta.fna.gz \
+				-o BdisBd2_BstaChr01.DP5.M3.synteny.outgr.fasta; \
 
 # Cgaln only, all logs saved
 demo: 
