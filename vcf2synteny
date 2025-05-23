@@ -676,8 +676,15 @@ foreach $dipsp (keys(%mapcoordfiles)) {
   while(<BED>) {
     next if(/^#/);
     my @data = split(/\t/,$_);
-    # 1-based nt
-    $outgcall{ $dipsp }{ sprintf("%s_%d",$data[0], $data[2]+1) } = $data[8];
+    # add +1 to match VCF coords
+    if($data[4] eq '+') { 
+      $outgcall{ $dipsp }{ sprintf("%s_%d",$data[0], $data[2]+1) } = $data[8];
+
+    } elsif(defined( $revcomp{ $data[8] } )) {
+      $outgcall{ $dipsp }{ sprintf("%s_%d",$data[0], $data[2]+1) } = $revcomp{ $data[8] };
+    } else {
+       $outgcall{ $dipsp }{ sprintf("%s_%d",$data[0], $data[2]+1) } = 'N';
+    }
   }
   close(BED);
 }
