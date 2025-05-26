@@ -1,0 +1,11 @@
+ABR2.bam	Bdis_ABR2	real_name
+Bd21.bam	Bdis_Bd21Control	real_name
+Bhyb26.bam	Bhyb_Bhyb26	real_name
+ABR113.bam	Bhyb_ABR113	real_name
+ABR114.bam	Bsta_ABR114	real_name
+TE4-3.bam	Bsta_TE4.3	real_name
+Bsta	Bdis.fna.gz.Bsta.fna.gz/Bdis.fna.gz.Bsta.fna.gz_Cgaln_-K11_-BS10000_-X4000_0.25_0.05.bed	WGA
+Bdis	Bd(\d+)	chrcode
+Bsta	Chr(\d+)	chrcode
+outg	Bdis.fna.gz.outg_Osat.fna.gz/Bdis.fna.gz.outg_Osat.fna.gz_Cgaln_-K11_-BS10000_-X4000_0.25_0.05.bed	WGA
+outg	Os(\+d)	chrcode
