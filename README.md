@@ -253,7 +253,12 @@ add also -d:
 
 ## 3) Citation
 
-this paper, to be written
+Main paper:
+
+Sancho R, Catalan P, Vogel JP, Contreras-Moreira B (2025) Deconvolution of Single Homeologous Polymorphism (SHP) drives phylogenetic analysis of allopolyploids.
+bioRxiv 2025.07.17.665301; doi: https://doi.org/10.1101/2025.07.17.665301 
+
+Key dependencies:
 
 Lin HN, Hsu WL (2020) GSAlign: an efficient sequence alignment tool for intra-species genomes. BMC Genomics 21:182. https://doi.org/10.1186/s12864-020-6569-1
 

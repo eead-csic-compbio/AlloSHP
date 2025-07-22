@@ -91,6 +91,7 @@ if(($opts{'h'})||(scalar(keys(%opts))==0)) {
   print "-1 syntenic coords are 1-based             (optional, 0-based/BED by default, WGA in -c config.synteny.tsv)\n"; 
   print "-p take only polymorphic sites             (optional, by default all sites, constant and SNPs, are taken)\n";
   print "-t path to dir for temp file               (Optional, default: -t $tmppath)\n";
+  print "\nPrimary citation: https://www.biorxiv.org/content/10.1101/2025.07.17.665301v1\n";
   exit(0);
 } 
 

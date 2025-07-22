@@ -70,7 +70,7 @@ if(($opts{'h'})||(scalar(keys(%opts))==0))
 
 if(defined($opts{'c'})) {
 
-  #print "\nPrimary citation:\n \n";
+  print "\nPrimary citation: https://www.biorxiv.org/content/10.1101/2025.07.17.665301v1\n";
   print "\nThis software uses external algorithms, please cite them accordingly:\n";
   print " GSAlign https://doi.org/10.1186/s12864-020-6569-1\n";
   print " Cgaln https://doi.org/10.1186/1471-2105-11-224\n";
