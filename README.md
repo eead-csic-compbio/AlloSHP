@@ -30,10 +30,10 @@ Should the standard installation instructions fail, you might want to try the fo
 
     conda create --name AlloSHP
     conda activate AlloSHP
-    conda install -c conda-forge cxx-compiler perl-db_file git gnuplot     
+    conda install -c conda-forge cxx-compiler zlib perl-db_file git gnuplot     
     git clone https://github.com/eead-csic-compbio/AlloSHP.git
     cd AlloSHP
-    make install # currently only Cgaln supported
+    make install
 
 ### Dependencies 
 
