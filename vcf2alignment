@@ -23,8 +23,6 @@ my %IUPACdegen = (
   'CG'=>'S', 'GC'=>'S', 'AT'=>'W', 'TA'=>'W',
   'GT'=>'K', 'TG'=>'K', 'AC'=>'M', 'CA'=>'M' );
 
-my %revcomp = ('A'=>'T', 'T'=>'A','G'=>'C','C'=>'G', 'N'=>'N');
-
 my @validformats = qw( phylip nexus fasta );
 
 # VCF thresholds for filtering and output options
