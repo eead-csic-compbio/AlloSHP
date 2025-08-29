@@ -29,15 +29,21 @@ $|=1;
 # Note: during benchmarks the master was B. distachyon (Bdis), while B. stacei (Bsta) 
 # and B. sylvaticum (Bsyl) were defined as secondary.
 
-# Bruno Contreras, Ruben Sancho EEAD-CSIC 2014-2025
+# Bruno Contreras Moreira, Ruben Sancho EEAD-CSIC 2014-2025
 
 
 my %IUPACdegen = (
   'AG'=>'R', 'GA'=>'R', 'CT'=>'Y', 'TC'=>'Y',
   'CG'=>'S', 'GC'=>'S', 'AT'=>'W', 'TA'=>'W',
-  'GT'=>'K', 'TG'=>'K', 'AC'=>'M', 'CA'=>'M' );
+  'GT'=>'K', 'TG'=>'K', 'AC'=>'M', 'CA'=>'M' 
+);
 
-my %revcomp = ('A'=>'T', 'T'=>'A','G'=>'C','C'=>'G', 'N'=>'N');
+my %revcomp = (
+  'A'=>'T', 'T'=>'A','G'=>'C','C'=>'G', 'N'=>'N',
+  'AG'=>'CT', 'GA'=>'TC', 'CT'=>'AG', 'TC'=>'GA',
+  'CG'=>'CG', 'GC'=>'GC', 'AT'=>'AT', 'TA'=>'TA',  
+  'GT'=>'AC', 'TG'=>'CA', 'AC'=>'GT', 'CA'=>'TG' 
+);
 
 my @validformats = qw( fasta );
 
@@ -76,7 +82,7 @@ my ($mindepth,$maxmissing,$only_polymorphic,$outfilename2) =
 my $tmppath = '/tmp';
 my $zerobased = $SYNTENYZEROBASED;
 
-getopts('hNH1pt:v:c:o:d:m:f:r:l:', \%opts);
+getopts('hNH1pt:v:c:o:d:m:V:r:l:', \%opts);
 
 if(($opts{'h'})||(scalar(keys(%opts))==0)) {
   print "\nusage: $0 [options]\n\n";
@@ -88,7 +94,7 @@ if(($opts{'h'})||(scalar(keys(%opts))==0)) {
   print "-r master reference genome                 (example: -r Bdis)\n";
   print "-d min depth of called SNPs                (optional, example: -d 3, default -d $mindepth)\n";
   print "-m max missing samples                     (optional, example: -m 10, default -m $maxmissing\n";
-  print "-f output VCF file name                    (optional, coordinates from -r genome, example: -f out.vcf)\n";
+  print "-V output VCF file name                    (optional, coordinates from -r genome, example: -f out.vcf)\n";
   print "-1 syntenic coords are 1-based             (optional, 0-based/BED by default, WGA in -c config.synteny.tsv)\n"; 
   print "-p take only polymorphic sites             (optional, by default all sites, constant and SNPs, are taken)\n";
   print "-H take also heterozygous sites            (optional, by default only homozygous, requires -l report from vcf2alignment -H)\n";
@@ -149,11 +155,11 @@ if(defined($opts{'m'}) && $opts{'d'} >= 0) {
   $maxmissing = $opts{'m'}
 }
 
-if(defined($opts{'f'})) {
-  if(-s $opts{'f'}) {
-    die "# ERROR: $opts{'f'} already exists, please choose valid -f filename\n";
+if(defined($opts{'V'})) {
+  if(-s $opts{'V'}) {
+    die "# ERROR: $opts{'V'} already exists, please choose valid -V filename\n";
   } else {	  
-    $outfilename2 = $opts{'f'}
+    $outfilename2 = $opts{'V'}
   }
 }
 
@@ -173,7 +179,7 @@ if(defined($opts{'1'})) {
   $zerobased = 0
 }
 
-printf(STDERR "# %s -r %s -v %s -c %s -l %s -o %s -d %d -m %d -f %s -p %d -H %d -t %s -N %d -1 %d\n\n",
+printf(STDERR "# %s -r %s -v %s -c %s -l %s -o %s -d %d -m %d -V %s -p %d -H %d -t %s -N %d -1 %d\n\n",
   $0,$master_ref,$filename,$configfile,$prevlogfile,$outfilename,
   $mindepth,$maxmissing,$outfilename2,$only_polymorphic,$het,$tmppath,
   !$reuse,!$zerobased);
@@ -205,7 +211,6 @@ tie(%synmap_rev,'DB_File',$rev_tmp_file)
   || die "# EXIT : cannot create $rev_tmp_file: $! (BerkeleyDB::Error)\n"; 
 tie(%synmap_master,'DB_File',$mas_tmp_file)
   || die "# EXIT : cannot create $mas_tmp_file: $! (BerkeleyDB::Error)\n";
-
 
 # temp files for multiple sequence alignments
 my ($fhmsa, $MSA_tmp_file) = tempfile(SUFFIX => '_msa.txt'      , UNLINK => 1, DIR => $tmppath);
@@ -436,8 +441,7 @@ while(<VCF>) {
         $sd++;
       } 
 
-      my (@sequence);
-      my %nts; # = ( $rawdata[3] => 1 ); # adds ref base call
+      my (@sequence, %nts);
       $sample=$depthcover=$missing=$badSNP=0;
       ($genomic_samples,$gbs_samples) = (0,0);
       foreach $idx ( $COLUMNFIRSTSAMPLE .. $lastsampleidx ) {
@@ -485,7 +489,7 @@ while(<VCF>) {
           }
         } else { # heterozygous and/or missing 
               
-          # parse heterozygous if requested             
+          # parse heterozygous if requested, note allele will be a dinucleotide             
           if($het == 1 && $genotype =~ m/^(\d+)[\/|](\d+)/) {
 
             ($call1,$call2) = ($1, $2);
@@ -498,7 +502,7 @@ while(<VCF>) {
               else { 
                 $allele2 = (split(/,/,$rawdata[4]))[$call2-1] || 'N' 
               }
-              $allele = $IUPACdegen{ $allele1.$allele2 } || 'N'; 
+              $allele = $allele1.$allele2 || 'N';  
               if(defined($genomic_samples{$samplenames[$sample]})){ $genomic_samples++ }
               else{ $gbs_samples++ }
             } else {
@@ -516,7 +520,9 @@ while(<VCF>) {
         }   
          
         $sequence[$sample] = $allele;
-        if($allele ne 'N'){ $nts{$allele}++ }
+        if($allele ne 'N') { 
+	  foreach $call1 (split(//,$allele)) { $nts{$call1}++ }	
+        }
 
         $sample++;
       } 
@@ -548,8 +554,6 @@ while(<VCF>) {
 	$snpname = "$rawdata[0]_$rawdata[1]";
 	$corr_snpname = $snpname; #default: same SNP name
 
-	#print "$snpname\n" if($snpname =~ m/13393792/);
-
         if($subgenome ne $master_ref) {
 
           # translate coords to master frame using syntenic positions
@@ -568,12 +572,11 @@ while(<VCF>) {
         } else { # make sure only syntenic positions are taken 
 
           next if(!defined($synmap_master{ "$rawdata[0]_$rawdata[1]" })); 
-          #print "mas $rawdata[0]_$rawdata[1]\n";
         }	
 
-	#print "$snpname\n" if($snpname =~ m/13393792/);
-	($chr, $pos) = split(/_/,$corr_snpname); #print "$chr $pos $snpname\n" if($snpname =~ m/13393792/);
+	($chr, $pos) = split(/_/,$corr_snpname); 
         foreach $sample (0 .. $lastsample) {
+
           # save sequence to MSA temp file
           print MSA "$chr\t$pos\t$sample\t$subgenome\t$sequence[$sample]\n";	
 
@@ -596,7 +599,7 @@ while(<VCF>) {
         $n_of_loci++;  
 
         # print to log	
-	if($n_of_loci % 10_000 == 0) {
+	if($n_of_loci % 100_000 == 0) {
           warn "# number of loci read from VCF: $n_of_loci\n";
 	}
       }   
@@ -631,19 +634,13 @@ if($? != 0) {
   unlink($MSA_tmp_file); # can be large
 }
 
-#my %MSA;
-#my @sorted_snpnames =
-#  map  { $_->[0] } 
-#  sort { $a->[1] <=> $b->[1] || $a->[2] <=> $b->[2] }
-#  map  { [ (split(/\-sg/))[0] , /^$chrcodes{$master_ref}/ , /_(\d+)\-sg/ ] } keys(%MSA);
-
 ## print sorted valid loci,
 ## these are syntenic positions that nonetheless can have missing secondary subgenome data
 my (%seen);    
 open(SORTMSA,"<",$MSA_sort_file) ||
   die "# ERROR: cannot read $MSA_sort_file\n";
 while(<SORTMSA>) {
-  ($chr,$pos,$sample,$subgenome,$allele) = split(/\t/,$_);
+  ($chr,$pos,$sample,$subgenome,$allele) = split(/\t/,$_); 
   $snpname = $chr .'_' . $pos;
   next if(defined($seen{ $snpname }));
 
@@ -750,7 +747,7 @@ while(<SORTMSA>) {
   $snpname = $chr .'_' . $pos; #print;
 
   # previous block complete (samples only)
-  if($snpname ne $prev_snpname && $prev_snpname ne '') {
+  if($snpname ne $prev_snpname && $prev_snpname ne '') { 
 
     # process outgroups
     foreach $dipsp (keys(%mapcoordfiles)) {
@@ -766,7 +763,15 @@ while(<SORTMSA>) {
       foreach $subgenome (sort keys(%chrcodes)) {
         next if($subgenome =~ m/^outg/);
         $fh = $tmp_fh{ $sample }{ $subgenome };	      
-        $sample_allele = $block{$sample}{$subgenome} || 'N';
+
+        if(defined($block{$sample}{$subgenome}) && 
+          length($block{$sample}{$subgenome}) > 1) {
+          $sample_allele = $IUPACdegen{ $block{$sample}{$subgenome} } || 'N';
+	  #print "$block{$sample}{$subgenome} -> $sample_allele\n";
+        } else {
+          $sample_allele = $block{$sample}{$subgenome} || 'N';
+        }
+
         print $fh $sample_allele;     
 
 	$stats{$sample}{$subgenome}{'total'}++;
@@ -805,6 +810,14 @@ foreach $sample (0 .. $lastsample) {
     next if($subgenome =~ m/^outg/);
     $fh = $tmp_fh{ $sample }{ $subgenome };
     $sample_allele = $block{$sample}{$subgenome} || 'N';
+
+    if(defined($block{$sample}{$subgenome}) && 
+      length($block{$sample}{$subgenome}) > 1) {
+      $sample_allele = $IUPACdegen{ $block{$sample}{$subgenome} } || 'N';
+    } else {
+      $sample_allele = $block{$sample}{$subgenome} || 'N';
+    }
+
     print $fh $sample_allele;
     
     $stats{$sample}{$subgenome}{'total'}++;
