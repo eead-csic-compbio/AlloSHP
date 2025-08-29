@@ -72,6 +72,14 @@ my $PERLEXE  = 'perl';
 # utilities shipping with script
 my $RM2LINES = "$Bin/utils/rm_double_lines.pl";
 
+# read version.txt
+my $VERSION = 'XXXX';
+open(VERSION,"$Bin/version.txt");
+while(<VERSION>) {
+  if(/^(\S+)/){ $VERSION = $1 } 
+}
+close(VERSION);
+
 ########################################################################
 
 my %opts;
@@ -190,7 +198,7 @@ my ($n_of_samples,$n_of_loci,$n_var_loci) = (0,0,0);
 my ($depthcover,$missing,$genotype,$allele,$dipsp);
 my ($allele1,$allele2,$call1,$call2);
 my ($corr_coord,$sample,$lastsample,$idx,$lastsampleidx,$file);
-my (@samplenames,@MSA,%MSAref,%stats,%refallele,%refstrand);
+my (@samplenames,@MSA,%MSAref,%stats);
 my ($snpname,$badSNP,$shortname,%contigstats);
 my ($coord,$subgenome,$code,$corr_snpname,$chr,$pos);
 my (%corr2snpname,%synfiles);
@@ -199,11 +207,12 @@ my $mu = Memory::Usage->new();
 $mu->record('start');
 
 # variables to create tied hashes which are BDB under the hood 
-my (%synmap_fwd,%synmap_rev,%synmap_master);
+my (%synmap_fwd,%synmap_rev,%synmap_master,%refallele);
 
 my ($fhf,$fwd_tmp_file) = tempfile(SUFFIX => '_fwd.coords.db', UNLINK => 1, DIR => $tmppath);
 my ($fhr,$rev_tmp_file) = tempfile(SUFFIX => '_rev.coords.db', UNLINK => 1, DIR => $tmppath);
 my ($fhm,$mas_tmp_file) = tempfile(SUFFIX => '_mas.coords.db', UNLINK => 1, DIR => $tmppath);
+my ($fha,$refa_tmp_file) = tempfile(SUFFIX => '_refallele.db', UNLINK => 1, DIR => $tmppath);
 
 tie(%synmap_fwd,'DB_File',$fwd_tmp_file)
   || die "# EXIT : cannot create $fwd_tmp_file: $! (BerkeleyDB::Error)\n";
@@ -211,6 +220,8 @@ tie(%synmap_rev,'DB_File',$rev_tmp_file)
   || die "# EXIT : cannot create $rev_tmp_file: $! (BerkeleyDB::Error)\n"; 
 tie(%synmap_master,'DB_File',$mas_tmp_file)
   || die "# EXIT : cannot create $mas_tmp_file: $! (BerkeleyDB::Error)\n";
+tie(%refallele,'DB_File',$refa_tmp_file)
+  || die "# EXIT : cannot create $refa_tmp_file: $! (BerkeleyDB::Error)\n";
 
 # temp files for multiple sequence alignments
 my ($fhmsa, $MSA_tmp_file) = tempfile(SUFFIX => '_msa.txt'      , UNLINK => 1, DIR => $tmppath);
@@ -357,15 +368,12 @@ foreach $dipsp (keys(%mapcoordfiles)) {
   unlink($tmpfile, $tmpfile2);
 }
 
-## read syntenic mapped positions 
+## read syntenic mapped positions (1-based) 
 
 warn "\n# master reference: $master_ref\n";
 warn "# secondary references: ".join(',',sort(keys(%synfiles)))."\n";
 warn "# outgroups: ".join(',',sort( grep{/^outg/} keys(%mapcoordfiles)))."\n";
 warn "# synteny files (SYNTENYZEROBASED=$zerobased): \n";
-
-#chrA  posA    endA    baseA   strandA chrB    posB    endB    baseB   block   SNP
-#Bd2     44989686        44989687        A       -       Chr01   13393558        13393559        A       2       .
 
 foreach my $file (keys(%synfiles)) {
   warn "# $file : $synfiles{$file}...\n";
@@ -374,6 +382,8 @@ foreach my $file (keys(%synfiles)) {
   open(SYNFILE,$synfiles{$file}) || die "# cannot read $synfiles{$file}\n";
   while(<SYNFILE>) {
 
+    #Bd2	51953360	A	-	Chr01	6863391	A
+
     my @rawdata = split(/\t/,$_);
 
     $corr_coord = $rawdata[1];
@@ -381,8 +391,9 @@ foreach my $file (keys(%synfiles)) {
 
     $snpname = "$rawdata[4]_$coord"; # -> position in secondary reference (i.e GenomeB)
 
-    # record syntenic coords of master subgenome (keys are master)
+    # record syntenic coords and allele of master subgenome (keys are master)
     $synmap_master{ "$rawdata[0]_$rawdata[1]" } = 1;
+    $refallele{ "$rawdata[0]_$rawdata[1]" } = $rawdata[2];
 
     # record syntenic coords of secondary subgenome (keys are 2ary)
     if($rawdata[3] eq '+'){ 
@@ -405,6 +416,7 @@ warn "\n";
 
 ## check input VCF and choose right way to parse input lines
 my ($genomic_samples,$gbs_samples); 
+my $master_contigs = ''; 
 
 # open temp file to store SNPs, will be sorted after
 open(MSA,">",$MSA_tmp_file) || 
@@ -413,7 +425,7 @@ open(MSA,">",$MSA_tmp_file) ||
 # Example: VCF file and information
 # Index        0     1   2  3   4   5    6      7              8      9        n
 # Headers      CHROM POS ID REF ALT QUAL FILTER INFO           FORMAT Sample_1 Sample_n
-# Position_1   Chr1  25  .  G   C   284  .      DP=45;MQ0F=0;â<80>¦ GT:DP  0/0:45  ...¦
+# Position_1   Chr1  25  .  G   C   284  .      DP=45;...      GT:DP  0/0:45   ...
 # Position_N   ChrN  N   .  ...
 
 open(VCF,"$RM2LINES $filename |") || die "# ERROR: cannot run $RM2LINES $filename\n";
@@ -536,6 +548,7 @@ while(<VCF>) {
       if(scalar(keys(%nts)) < 2 && $only_polymorphic){ $badSNP = 1 }
      
       if(!$badSNP) {
+
         if($sample != $n_of_samples) {
           die "# VCF line contains less samples than expected ($sample < $n_of_samples):\n$_\n";
         }
@@ -560,6 +573,7 @@ while(<VCF>) {
           if($synmap_fwd{$snpname}) { 
             $corr_snpname = $synmap_fwd{$snpname};
             # sequence[sample] set by default earlier
+	    $refallele{ $snpname } = $rawdata[3];
 
           } elsif($synmap_rev{$snpname}) {
             $corr_snpname = $synmap_rev{$snpname};
@@ -569,9 +583,9 @@ while(<VCF>) {
           }
           else{ next } 
 
-        } else { # make sure only syntenic positions are taken 
+        } else { # make sure only syntenic positions are taken
 
-          next if(!defined($synmap_master{ "$rawdata[0]_$rawdata[1]" })); 
+          next if(!defined($synmap_master{ $snpname }));
         }	
 
 	($chr, $pos) = split(/_/,$corr_snpname); 
@@ -602,7 +616,8 @@ while(<VCF>) {
 	if($n_of_loci % 100_000 == 0) {
           warn "# number of loci read from VCF: $n_of_loci\n";
 	}
-      }   
+      } 
+
    } elsif($rawdata[0] eq '#CHROM') {
       #CHROM   POS   ID   REF   ALT   QUAL   FILTER   INFO   FORMAT   sample1   sampleN
       push(@samplenames,@rawdata[9 .. $#rawdata]);
@@ -611,11 +626,16 @@ while(<VCF>) {
       $lastsampleidx = $#rawdata;
       printf(STDERR "# number of samples found=$n_of_samples\n");
       printf(STDERR "# parse heterozygous=$het\n");   
+
+   } elsif(/^##contig=<ID=([^,]+),length=\d+>/ && $outfilename2 ne '') {
+      if($1 =~ m/$chrcodes{ $master_ref }/) {
+        $master_contigs .= $_;
+      }
    }
 }  
 close(VCF);
 
-close(MSA); 
+close(MSA);
 
 ## sort SNPs ahead of printing the final multiple sequence alignment (MSA),
 ## keys in %MSA look like Bd2_44989455-sgBsta-s4
@@ -659,10 +679,37 @@ if(!$only_polymorphic) {
 
 
 
-## print sorted SNPs in FASTA format
+## print sorted SNPs in FASTA and optionally VCF format
 
 my (%tmp_fh, %tmp_fname, %block);
 my ($fh, $prev_snpname, $block, $sample_allele);
+
+if($outfilename2 ne '') {
+  open(OUTVCF,">",$outfilename2) ||
+    die "# ERROR: cannot create $outfilename2\n";
+
+  print OUTVCF <<"END";  
+##fileformat=VCFv4.2
+$master_contigs
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##vcf2sintenyVersion=$VERSION
+END
+
+  print OUTVCF "CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT";
+}
+
+# create separate files for outgroup(s) in config file
+foreach $dipsp (keys(%mapcoordfiles)) {
+  next if($dipsp !~ m/^outg/);
+
+  my $tmpFASTAfile = "_$dipsp.fasta";
+  $tmp_fh{ $dipsp }{ $dipsp } = FileHandle->new(">$tmpFASTAfile");
+  $tmp_fname{ $dipsp }{ $dipsp } = $tmpFASTAfile;
+  $fh = $tmp_fh{ $dipsp }{ $dipsp };
+  print $fh ">$dipsp\n";
+
+  print OUTVCF "\t$dipsp" if($outfilename2 ne '');
+}
 
 # open separate files for each sample,subgenome tuple
 foreach $sample (0 .. $lastsample) {
@@ -679,20 +726,13 @@ foreach $sample (0 .. $lastsample) {
     # print FASTA header
     $shortname = $vcf_real_names{$samplenames[$sample]} || $samplenames[$sample];
     print $fh ">$shortname\_$subgenome\n";
+
+    # print VCF samples
+    print OUTVCF "\t$shortname\_$subgenome" if($outfilename2 ne '');
   }
 }
 
-# if required create separate files for outgroups also, 
-# must be in config file
-foreach $dipsp (keys(%mapcoordfiles)) {
-  next if($dipsp !~ m/^outg/);
-
-  my $tmpFASTAfile = "_$dipsp.fasta";
-  $tmp_fh{ $dipsp }{ $dipsp } = FileHandle->new(">$tmpFASTAfile");
-  $tmp_fname{ $dipsp }{ $dipsp } = $tmpFASTAfile;
-  $fh = $tmp_fh{ $dipsp }{ $dipsp };
-  print $fh ">$dipsp\n";
-}
+print OUTVCF "\n" if($outfilename2 ne '');
 
 # if required, parse WGA bedfiles of outgroups in config file
 my (%outgcall);
@@ -749,6 +789,10 @@ while(<SORTMSA>) {
   # previous block complete (samples only)
   if($snpname ne $prev_snpname && $prev_snpname ne '') { 
 
+    # ($REF,$ALT,$NT2NUM) = get_vcf_alleles();
+
+    print OUTVCF "$chr\t$pos\t$corr2snpname{$snpname}\t$refallele{$snpname}\tALT\t.\t.\t.\tGT" if($outfilename2 ne '');	  
+
     # process outgroups
     foreach $dipsp (keys(%mapcoordfiles)) {
       next if($dipsp !~ m/^outg/);
@@ -756,6 +800,10 @@ while(<SORTMSA>) {
       $fh = $tmp_fh{ $dipsp }{ $dipsp };
       $sample_allele =  $outgcall{ $dipsp }{ $snpname } || 'N';
       print $fh $sample_allele;
+
+      if($outfilename2 ne '') {
+        #if($sample_allele eq 'N') { print OUTVCF 
+      }
     }  
 
     # process previous block, fill missing data with Ns
@@ -774,6 +822,9 @@ while(<SORTMSA>) {
 
         print $fh $sample_allele;     
 
+        # GT
+
+
 	$stats{$sample}{$subgenome}{'total'}++;
         if($sample_allele ne 'N') 
         {
@@ -781,6 +832,8 @@ while(<SORTMSA>) {
         }	
       }
     }
+
+    if($outfilename2 ne '') { print OUTVCF "\n" }
 
     %block = ();
   }
@@ -881,6 +934,7 @@ if($? != 0) {
 untie(%synmap_fwd);
 untie(%synmap_rev);
 untie(%synmap_master);
+untie(%refallele);
 
 foreach $sample (0 .. $lastsample) {
   foreach $subgenome (sort keys(%chrcodes)) {
