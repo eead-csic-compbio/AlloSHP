@@ -789,11 +789,9 @@ while(<SORTMSA>) {
   # previous block complete (samples only)
   if($snpname ne $prev_snpname && $prev_snpname ne '') { 
 
-    # ($REF,$ALT,$NT2NUM) = get_vcf_alleles();
-
-    print OUTVCF "$chr\t$pos\t$corr2snpname{$snpname}\t$refallele{$snpname}\tALT\t.\t.\t.\tGT" if($outfilename2 ne '');	  
-
     # process outgroups
+    my @calls;
+
     foreach $dipsp (keys(%mapcoordfiles)) {
       next if($dipsp !~ m/^outg/);
 
@@ -802,7 +800,7 @@ while(<SORTMSA>) {
       print $fh $sample_allele;
 
       if($outfilename2 ne '') {
-        #if($sample_allele eq 'N') { print OUTVCF 
+        push(@calls, $sample_allele) if($sample_allele eq 'N');
       }
     }  
 
@@ -822,8 +820,9 @@ while(<SORTMSA>) {
 
         print $fh $sample_allele;     
 
-        # GT
-
+        if($outfilename2 ne '') {
+          push(@calls, $block{$sample}{$subgenome} || 'N');
+        }
 
 	$stats{$sample}{$subgenome}{'total'}++;
         if($sample_allele ne 'N') 
@@ -833,7 +832,35 @@ while(<SORTMSA>) {
       }
     }
 
-    if($outfilename2 ne '') { print OUTVCF "\n" }
+    # compute ALT and allele numbers for VCF format
+    if($outfilename2 ne '') { 
+     
+      my ($ALT,%nts,%nt2num) = ('');
+      foreach $allele2 (@calls) {
+        while($allele =~ m/([ACGT])/g) { $nts{ $1 } = 1; print ">$1\n"; }
+      } 
+      $nt2num{ $refallele{$snpname} } = 0;
+      foreach $allele2 (sort keys(%nts)) {
+        next if($allele2 eq $refallele{$snpname});
+        $nt2num{ $allele2 } = scalar(keys(%nt2num));
+        $ALT .= "$allele2,";	
+      }
+
+      print OUTVCF "$chr\t$pos\t$corr2snpname{$snpname}\t$refallele{$snpname}\t$ALT\t.\t.\t.\tGT";
+      foreach $allele2 (@calls) { print "#$allele2\n";
+        if($allele2 eq 'N') {
+          print OUTVCF "\t./.";
+	} elsif(length($allele2) == 1) {
+          printf(OUTVCF "\t%s/%s",$nt2num{ $allele2 },$nt2num{ $allele2 })
+        } else {
+          ($call1,$call2) = split(//,$allele2);
+          printf(OUTVCF "\t%s/%s",$nt2num{ $call1 },$nt2num{ $call2 })	  
+        }
+      }	      
+      print OUTVCF "\n"; exit;
+
+      
+    }
 
     %block = ();
   }
