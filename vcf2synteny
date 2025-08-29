@@ -69,13 +69,14 @@ my $RM2LINES = "$Bin/utils/rm_double_lines.pl";
 ########################################################################
 
 my %opts;
-my ($filename,$prevlogfile,$configfile,$outfilename,$master_ref,$het) = ('','','','','',0);
+my ($filename,$prevlogfile,$configfile,$outfilename) = ('','','','');
+my ($reuse,$het,$master_ref) = (1,0);
 my ($mindepth,$maxmissing,$only_polymorphic,$outfilename2) =
   ($MINDEPTHCOVERPERSAMPLE,$MAXMISSINGSAMPLES,$ONLYPOLYMORPHIC,'');
 my $tmppath = '/tmp';
 my $zerobased = $SYNTENYZEROBASED;
 
-getopts('hH1pt:v:c:o:d:m:f:r:l:', \%opts);
+getopts('hNH1pt:v:c:o:d:m:f:r:l:', \%opts);
 
 if(($opts{'h'})||(scalar(keys(%opts))==0)) {
   print "\nusage: $0 [options]\n\n";
@@ -91,7 +92,8 @@ if(($opts{'h'})||(scalar(keys(%opts))==0)) {
   print "-1 syntenic coords are 1-based             (optional, 0-based/BED by default, WGA in -c config.synteny.tsv)\n"; 
   print "-p take only polymorphic sites             (optional, by default all sites, constant and SNPs, are taken)\n";
   print "-H take also heterozygous sites            (optional, by default only homozygous, requires -l report from vcf2alignment -H)\n";
-  print "-t path to dir for temp file               (Optional, default: -t $tmppath)\n";
+  print "-N new temp files, don't re-use            (optional, by default temp files are re-used if available at -t)\n";
+  print "-t path to dir for temp file               (optional, default: -t $tmppath)\n";
   print "\nPrimary citation: https://www.biorxiv.org/content/10.1101/2025.07.17.665301v1\n";
   exit(0);
 } 
@@ -163,14 +165,18 @@ if(defined($opts{'H'})) {
   $het = 1
 }
 
+if(defined($opts{'N'})) {
+  $reuse = 0
+}
+
 if(defined($opts{'1'})) {
   $zerobased = 0
 }
 
-printf(STDERR "# %s -r %s -v %s -c %s -l %s -o %s -d %d -m %d -f %s -p %d -H %d -t %s -1 %d\n\n",
+printf(STDERR "# %s -r %s -v %s -c %s -l %s -o %s -d %d -m %d -f %s -p %d -H %d -t %s -N %d -1 %d\n\n",
   $0,$master_ref,$filename,$configfile,$prevlogfile,$outfilename,
   $mindepth,$maxmissing,$outfilename2,$only_polymorphic,$het,$tmppath,
-  !$zerobased);
+  !$reuse,!$zerobased);
 
 ######################################################
 
@@ -279,7 +285,7 @@ foreach $dipsp (keys(%mapcoordfiles)) {
   $tmpfile2 = $tmppath . "/_list_$dipsp\_positions.coords2";
   $synfiles{ $dipsp } = $tmppath . "/_$master_ref.$dipsp.coords.positions.tsv";
 
-  if(-s $synfiles{ $dipsp }) { # TODO add reuseOK arg
+  if($reuse && -s $synfiles{ $dipsp }) { 
     warn "# re-using $synfiles{ $dipsp }\n";
     next;
   } else {
