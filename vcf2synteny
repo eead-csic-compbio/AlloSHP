@@ -69,7 +69,7 @@ my $RM2LINES = "$Bin/utils/rm_double_lines.pl";
 ########################################################################
 
 my %opts;
-my ($filename,$prevlogfile,$configfile,$outfilename,$master_ref,$het) = ('','','','',0);
+my ($filename,$prevlogfile,$configfile,$outfilename,$master_ref,$het) = ('','','','','',0);
 my ($mindepth,$maxmissing,$only_polymorphic,$outfilename2) =
   ($MINDEPTHCOVERPERSAMPLE,$MAXMISSINGSAMPLES,$ONLYPOLYMORPHIC,'');
 my $tmppath = '/tmp';
