@@ -123,7 +123,7 @@ warn "# $0 -v $filename -c $configfile -l $reportfilename -o $outfilename ".
 my ($n_of_samples,$n_of_loci,$n_var_loci) = (0,0,0);
 my ($depthcover,$missing,$genotype,$allele,$allele1,$allele2,$call1,$call2);
 my ($corr_coord,$sample,$lastsample,$idx,$lastsampleidx,$file,$snpname,$badSNP,$shortname);
-my (@samplenames,@MSA,%MSAref,%stats,%refallele,%refstrand,%contigstats);
+my (@samplenames,@MSA,%MSAref,%stats,%contigstats);
 my %vcf_real_names; # To shorten sample names in output alignment
 my %genomic_samples;# Deprecated: Set samples which should not count as missing data.
                     # For instance, we used it to leave outgroups out of these calculations,
