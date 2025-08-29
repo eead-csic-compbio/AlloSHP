@@ -12,11 +12,12 @@ use Resources qw/ get_time_RAM /;
 
 $|=1;
 
-# Takes an input VCF file with reads mapped to several concatenated references,
+# Takes input VCF file with reads mapped to several concatenated references,
 # and uses synteny-based equivalent coordinates to map polymorphism back to the 
 # main/user-defined chromosome positions, in an effort to separate subgenomes, 
 # which are then multiply aligned.
-# Only FASTA format is produced to facilitate collapsing sequences afterwards.
+# FASTA output is produced by default to facilitate collapsing sequences afterwards.
+# Optionally, VCF output is also produced.
 # 
 # Synteny-based equivalent positions in BED format produced with script WGA.
 # These files are used to translate positions of secondary reference genomes
@@ -45,7 +46,6 @@ my $SYNTENYZEROBASED       = 1;        # set to 1 if synteny coords are 0-based,
 my $MINDEPTHCOVERPERSAMPLE = 3;        # integer, min read depth at each position for each sample
 my $MAXMISSINGSAMPLES      = 10;       # integer, max number of missing samples accepted per locus (VCF row)
 my $ONLYPOLYMORPHIC        = 0;        # output option: 0 (constant and SNPs) or 1 (only SNPs). Zero is recommended at this stage
-my $OUTFILEFORMAT          = 'fasta';  # other formats in @validformats (phylip, nexus or fasta)
 
 # first guess of key VCF columns, adjusted in real time below
 my $COLUMNFIRSTSAMPLE      = 9; # integer, Column number (0/1-based) with the first sample in the VCF file
@@ -69,13 +69,13 @@ my $RM2LINES = "$Bin/utils/rm_double_lines.pl";
 ########################################################################
 
 my %opts;
-my ($filename,$prevlogfile,$configfile,$outfilename,$master_ref) = ('','','','');
-my ($mindepth,$maxmissing,$only_polymorphic,$outformat) =
-  ($MINDEPTHCOVERPERSAMPLE,$MAXMISSINGSAMPLES,$ONLYPOLYMORPHIC,$OUTFILEFORMAT);
+my ($filename,$prevlogfile,$configfile,$outfilename,$master_ref,$het) = ('','','','',0);
+my ($mindepth,$maxmissing,$only_polymorphic,$outfilename2) =
+  ($MINDEPTHCOVERPERSAMPLE,$MAXMISSINGSAMPLES,$ONLYPOLYMORPHIC,'');
 my $tmppath = '/tmp';
 my $zerobased = $SYNTENYZEROBASED;
 
-getopts('h1pt:v:c:o:d:m:f:r:l:', \%opts);
+getopts('hH1pt:v:c:o:d:m:f:r:l:', \%opts);
 
 if(($opts{'h'})||(scalar(keys(%opts))==0)) {
   print "\nusage: $0 [options]\n\n";
@@ -83,13 +83,14 @@ if(($opts{'h'})||(scalar(keys(%opts))==0)) {
   print "-v input VCF file                          (example: -v data.vcf.gz)\n";
   print "-l report file from vcf2alignment, 1-based (example: -l vcf.rport.log.gz)\n"; 
   print "-c input TSV config file                   (example: -c config.synteny.tsv)\n";
-  print "-o output file name                        (example: -o out.fasta)\n";
+  print "-o output FASTA file name                  (example: -o out.fasta)\n";
   print "-r master reference genome                 (example: -r Bdis)\n";
   print "-d min depth of called SNPs                (optional, example: -d 3, default -d $mindepth)\n";
   print "-m max missing samples                     (optional, example: -m 10, default -m $maxmissing\n";
-# print "-f output format                           (optional, example: -f nexus, default -f $outformat)\n";
+  print "-f output VCF file name                    (optional, coordinates from -r genome, example: -f out.vcf)\n";
   print "-1 syntenic coords are 1-based             (optional, 0-based/BED by default, WGA in -c config.synteny.tsv)\n"; 
   print "-p take only polymorphic sites             (optional, by default all sites, constant and SNPs, are taken)\n";
+  print "-H take also heterozygous sites            (optional, by default only homozygous, requires -l report from vcf2alignment -H)\n";
   print "-t path to dir for temp file               (Optional, default: -t $tmppath)\n";
   print "\nPrimary citation: https://www.biorxiv.org/content/10.1101/2025.07.17.665301v1\n";
   exit(0);
@@ -146,27 +147,36 @@ if(defined($opts{'m'}) && $opts{'d'} >= 0) {
   $maxmissing = $opts{'m'}
 }
 
-if(defined($opts{'f'}) && grep(/^$opts{'f'}$/,@validformats)) {
-  $outformat = $opts{'f'}
+if(defined($opts{'f'})) {
+  if(-s $opts{'f'}) {
+    die "# ERROR: $opts{'f'} already exists, please choose valid -f filename\n";
+  } else {	  
+    $outfilename2 = $opts{'f'}
+  }
 }
 
 if(defined($opts{'p'})) {
   $only_polymorphic = 1
 }
 
+if(defined($opts{'H'})) {
+  $het = 1
+}
+
 if(defined($opts{'1'})) {
   $zerobased = 0
 }
 
-printf(STDERR "# %s -r %s -v %s -c %s -l %s -o %s -d %d -m %d -f %s -p %d -t %s -1 %d\n\n",
+printf(STDERR "# %s -r %s -v %s -c %s -l %s -o %s -d %d -m %d -f %s -p %d -H %d -t %s -1 %d\n\n",
   $0,$master_ref,$filename,$configfile,$prevlogfile,$outfilename,
-  $mindepth,$maxmissing,$outformat,$only_polymorphic,$tmppath,
+  $mindepth,$maxmissing,$outfilename2,$only_polymorphic,$het,$tmppath,
   !$zerobased);
 
 ######################################################
 
 my ($n_of_samples,$n_of_loci,$n_var_loci) = (0,0,0);
 my ($depthcover,$missing,$genotype,$allele,$dipsp);
+my ($allele1,$allele2,$call1,$call2);
 my ($corr_coord,$sample,$lastsample,$idx,$lastsampleidx,$file);
 my (@samplenames,@MSA,%MSAref,%stats,%refallele,%refstrand);
 my ($snpname,$badSNP,$shortname,%contigstats);
@@ -200,8 +210,8 @@ my %mapcoordfiles;  # Files with pre-computed syntenic genomic coords
 my %chrcodes;       # Prefixes/regular expressions that connect chromosomes to reference diploid genomes,
                     # must match the master and 2ary references or subgenomes
 my %genomic_samples;# Deprecated: Set samples which should not count as missing data.
-                    # Deprecated: For instance, we used it to leave outgroups out of these calculations,
-                    # Deprecated: as their WGS reads are significantly deeper than GBS/RNAseq samples
+                    # For instance, we used it to leave outgroups out of these calculations,
+                    # as WGS reads are significantly deeper than GBS/RNAseq samples
 
 ## parse config file
 open(CONFIG,"<",$configfile) || die "# cannot read $configfile\n";
@@ -408,9 +418,6 @@ while(<VCF>) {
       # skip indels (should have been removed previously)
       next if($rawdata[3] =~ m/[A-Z]{2,}/ || $rawdata[4] =~ m/[A-Z]{2,}/); 
    
-      # skip multiallelic SNPs
-      #next if(length($rawdata[4]) > 1);
-
       # find out which data fields to parse, 
       # this is done every row to avoid errors in VCF files where format might change
       my @sampledata = split(/:/,$rawdata[$COLUMNFIRSTSAMPLE-1]);
@@ -429,9 +436,9 @@ while(<VCF>) {
       ($genomic_samples,$gbs_samples) = (0,0);
       foreach $idx ( $COLUMNFIRSTSAMPLE .. $lastsampleidx ) {
 
-      # 0/0:0,255,255:93:0:99 --> homozygous reference (REF) allele
-      # 1/1:255,255,0:185:0:99 --> homozygous alternative (ALT) allele
-      # 0/1:236,0,237:66:7:9 --> heterozygous
+        # 0/0:0,255,255:93:0:99 --> homozygous reference (REF) allele
+        # 1/1:255,255,0:185:0:99 --> homozygous alternative (ALT) allele
+        # 0/1:236,0,237:66:7:9 --> heterozygous
 
         my @sampledata = split(/:/,$rawdata[$idx]); #print "$rawdata[$idx]\n";
         $genotype = $sampledata[$GENOTYPECOLUMNFORMAT];
@@ -470,10 +477,33 @@ while(<VCF>) {
           } else { 
             if(!$genomic_samples{$samplenames[$sample]}){ $missing++ } 
           }
-        } else { # missing or heterozygous are treated as missing all the same way
-          if(!$genomic_samples{$samplenames[$sample]}){ $missing++ }
+        } else { # heterozygous and/or missing 
+              
+          # parse heterozygous if requested             
+          if($het == 1 && $genotype =~ m/^(\d+)[\/|](\d+)/) {
+
+            ($call1,$call2) = ($1, $2);
+            if($depthcover >= $mindepth){
+              if($call1 eq '0') { $allele1 = $rawdata[3] }
+              else { 
+                $allele1 = (split(/,/,$rawdata[4]))[$call1-1] || 'N' 
+              }
+              if($call2 eq '0') { $allele2 = $rawdata[3] }
+              else { 
+                $allele2 = (split(/,/,$rawdata[4]))[$call2-1] || 'N' 
+              }
+              $allele = $IUPACdegen{ $allele1.$allele2 } || 'N'; 
+              if(defined($genomic_samples{$samplenames[$sample]})){ $genomic_samples++ }
+              else{ $gbs_samples++ }
+            } else {
+              if(!$genomic_samples{$samplenames[$sample]}){ $missing++ }
+            }
+
+          } else {    
+            if(!$genomic_samples{$samplenames[$sample]}){ $missing++ }
+          }
         }
-   
+	
         if($missing > $maxmissing) {
           $badSNP = 1;
           last;
@@ -571,6 +601,7 @@ while(<VCF>) {
       $lastsample = $n_of_samples-1;
       $lastsampleidx = $#rawdata;
       printf(STDERR "# number of samples found=$n_of_samples\n");
+      printf(STDERR "# parse heterozygous=$het\n");   
    }
 }  
 close(VCF);
