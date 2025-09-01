@@ -9,7 +9,6 @@ use FindBin '$Bin';
 use lib "$Bin/lib";
 use Memory::Usage;
 use Resources qw/ get_time_RAM /;
-#use Memoize;
 
 $|=1;
 
@@ -785,7 +784,6 @@ foreach $dipsp (keys(%mapcoordfiles)) {
 #...
 
 $prev_snpname = '';
-#memoize('calls2alleles');
 
 open(SORTMSA,"<",$MSA_sort_file) ||
   die "# ERROR: cannot read $MSA_sort_file\n";
