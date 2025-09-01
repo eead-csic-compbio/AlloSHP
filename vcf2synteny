@@ -9,7 +9,7 @@ use FindBin '$Bin';
 use lib "$Bin/lib";
 use Memory::Usage;
 use Resources qw/ get_time_RAM /;
-use Memoize;
+#use Memoize;
 
 $|=1;
 
@@ -138,7 +138,11 @@ if(!defined($opts{'l'})) {
 if(!defined($opts{'o'})){
   die "# ERROR: need output filename (-o)\n";
 } else {
-  $outfilename = $opts{'o'}
+  if(-s $opts{'o'}) {
+    die "# ERROR: $opts{'o'} already exists, please choose valid -o filename\n";
+  } else {
+    $outfilename = $opts{'o'}
+  }
 }
 
 if(!defined($opts{'r'})){
@@ -781,7 +785,7 @@ foreach $dipsp (keys(%mapcoordfiles)) {
 #...
 
 $prev_snpname = '';
-memoize('calls2alleles');
+#memoize('calls2alleles');
 
 open(SORTMSA,"<",$MSA_sort_file) ||
   die "# ERROR: cannot read $MSA_sort_file\n";
@@ -845,7 +849,7 @@ while(<SORTMSA>) {
 
       foreach $allele2 (@$ref_array_genotypes) { 
         print OUTVCF "\t$allele2";
-      } print OUTVCF "\n";
+      } print OUTVCF "\n"; #"\t".join(',',@calls).";$refallele{$snpname}\n";
     }
 
     %block = ();
@@ -860,7 +864,6 @@ while(<SORTMSA>) {
 close(SORTMSA);
 
 # take care of last block
-
 my @calls;
 
 # outgroups
@@ -913,7 +916,7 @@ if($outfilename2 ne '') {
 
   foreach $allele2 (@$ref_array_genotypes) {
     print OUTVCF "\t$allele2";
-  } print OUTVCF "\n"; #"\t".join(',',@calls)."\n";
+  } print OUTVCF "\n";
 }
 
 
@@ -948,17 +951,18 @@ foreach $dipsp (keys(%mapcoordfiles)) {
 ## concat temp FASTA files and produce single output FASTA file
 print "# concatenating temp files ...\n";
 $onelinercmd = "$CATEXE ";
+
+# outgroups ahead as in VCF
+foreach $dipsp (keys(%mapcoordfiles)) {
+  next if($dipsp !~ m/^outg/);
+  $onelinercmd .= " $tmp_fname{ $dipsp }{ $dipsp } ";
+}
+
 foreach $sample (0 .. $lastsample) {
   foreach $subgenome (sort keys(%chrcodes)) {
     next if($subgenome =~ m/^outg/);	  
     $onelinercmd .= "$tmp_fname{ $sample }{ $subgenome } "
   }
-}
-
-# outgroups
-foreach $dipsp (keys(%mapcoordfiles)) {
-  next if($dipsp !~ m/^outg/);
-  $onelinercmd .= " $tmp_fname{ $dipsp }{ $dipsp } ";
 }
 
 $onelinercmd .= " > $outfilename";
@@ -1022,6 +1026,10 @@ sub calls2alleles {
     $nt2num{ $allele } = scalar(keys(%nt2num));
     $ALT .= "$allele,";
   } chop($ALT);
+
+  if($ALT eq '') {
+    $ALT = $REF;
+  }
 
   foreach $allele (@$ref_array_calls) {
     if($allele eq 'N') {
