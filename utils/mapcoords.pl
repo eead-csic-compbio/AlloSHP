@@ -1,12 +1,13 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl
 use strict;
+use warnings;
 
 # Parse whole-genome alignments (WGA) of A & B genomes/species 
 # with the FASTA-like format produced by CGaln and produces 
 # a table of 0-based, BED-like equivalent coordinates.
 # Note: skips lowercase soft-masked bases.
 #
-# B Contreras-Moreira, R Sancho EEAD-CSIC, Unizar, 2017-2024
+# B Contreras-Moreira, R Sancho EEAD-CSIC, Unizar, 2017-2025
 
 my $MAXMULTIBLOCKPOSITIONS = 0.25; # max ratio of mapped positions in other blocks
 my $MAXMULTIPOSITIONS      = 0.05; # max ratio of coordinates with multiple positions in same block

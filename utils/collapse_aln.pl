@@ -1,5 +1,6 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl
 use strict;
+use warnings;
 
 # Takes an input FASTA aligned with vcf2alignment_synteny and collapses subgenome lines (Bdis, Bsta and Bsyl)
 # in one line 
