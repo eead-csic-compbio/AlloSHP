@@ -81,7 +81,7 @@ Note that the steps below can be run in one go as follows:
 
 ### 2.1) Whole-genome alignments (WGA)
 
-WGAs must be computed to find syntenic segments among the reference genomes available for read mapping.
+Script `WGA` must be computed to find syntenic segments among the reference genomes available for read mapping.
 By default, this uses [CGaln](https://github.com/rnakato/Cgaln),
 which requires the input sequences to be [soft-masked](https://genomevolution.org/wiki/index.php/Masked) ahead.
 
@@ -162,9 +162,11 @@ Alternatively, the GSAlign WGA algorithm can be invoked as follows, with flag `-
 Note that you can change the default GSAlign settings with the optional flag `-G`. This might be required for your genomes of interest.
 
 ![whole-genome alignment plot](./pics/Bdis.fna.gz.Bsta.fna.gz_Cgaln_-K11_-BS10000_-X12000_-fc_-cons.dot.png)
+
 *Figure 1. WGA dotplot resulting from Cgaln alignment of two homologous chromosomes.*
 
 ![whole-genome alignment plot](./pics/dotplot.png)
+
 *Figure 2. Multi-chromosome WGA dotplot.* A good WGA dotplot will have long diagonal runs of aligned genome regions instead of clouds.
 
 ### 2.2) Filtering valid positions in the VCF file
@@ -180,23 +182,44 @@ The table shows the flags of vcf2alignment:
 |flag|note|
 |:-------|:---|
 |-h  | this message|
-|-v  | input VCF file | (example: -v data.vcf.gz)|
-|-c  | input TSV config file | (example: -c config.tsv)|
-|-l  | output report file name, 1-based coordinates | (example: -l vcf.report.log.gz)|
-|-o  | output MSA file name | (optional, example: -o out.fasta)|
-|-d  | min read depth at each position for each sample | (optional, example: -d 3, default -d $mindepth, use -d 0 if VCF file lacks DP)|
-|-m  | max missing samples | (optional, example: -m 10, default -m $maxmissing)|
-|-f  | output format | (optional, example: -f nexus, default -f $outformat)|
-|-p  | take only polymorphic sites | (optional, by default all sites, constant and SNPs, are taken)|
-|-H  | take also heterozygous sites | (optional, by default only homozygous are taken)|
+|-v  | input VCF file (example: -v data.vcf.gz)|
+|-c  | input TSV config file (example: -c config.tsv)|
+|-l  | output report file name, 1-based coordinates (example: -l vcf.report.log.gz)|
+|-o  | output MSA file name (optional, example: -o out.fasta)|
+|-d  | min read depth at each position for each sample (optional, example: -d 3, default -d $mindepth, use -d 0 if VCF file lacks DP)|
+|-m  | max missing samples (optional, example: -m 10, default -m $maxmissing)|
+|-f  | output format (optional, example: -f nexus, default -f $outformat)|
+|-p  | take only polymorphic sites (optional, by default all sites, constant and SNPs, are taken)|
+|-H  | take also heterozygous sites (optional, by default only homozygous are taken)|
 
-In our example, we use a toy VCF file that contains read-mapping positions on chromosomes Bd2 of Brachypodium distachyon and Chr01 of Brachypodium stacei:
+In our example, we use a toy VCF file that contains read-mapping positions on chromosomes Bd2 of *Brachypodium distachyon* and Chr01 of *Brachypodium stacei*:
 
     ./vcf2alignment -v sample_data/BdisBd2_BstaChr01.vcf.gz -c sample_data/config.tsv -l BdisBd2_BstaChr01.vcf.log.gz -d 5 -m 3
 
 ### 2.3) Producing a multiple sequence alignment of polyploid subgenomes
 
-Script `vcf2synteny` puts it all together and produces an alignment in FASTA format:
+Script `vcf2synteny` parses the VCF file obtained from reads mapped to multiple concatenated reference genomes, the LOG file of valid loci computed by `vcf2alignment`, and the synteny-based equivalent coordinates (BED file) computed by `WGA` to align the polymorphic loci referenced by syntenic positions, separating them on each reference genome, and defining them as SHPs. The resulting MSA will have as many subgenomes as reference genomes were used.
+
+The table shows the flags of ´vcf2synteny´:
+
+|flag|note|
+|:-------|:---|
+|-h  |  this message|
+|-v  |  input VCF file (example: -v data.vcf.gz)|
+|-l  |  report file from vcf2alignment, 1-based (example: -l vcf.rport.log.gz)|
+|-c  |  input TSV config file (example: -c config.synteny.tsv)|
+|-o  |  output FASTA file name (example: -o out.fasta)|
+|-r  |  master reference genome (example: -r Bdis)|
+|-d  |  min depth of called SNPs (optional, example: -d 3, default -d $mindepth)|
+|-m  |  max missing samples (optional, example: -m 10, default -m $maxmissing)|
+|-V  |  output VCF file name (optional, coordinates from -r genome, example: -f out.vcf)|
+|-1  |  syntenic coords are 1-based (optional, 0-based/BED by default, WGA in -c config.synteny.tsv)|
+|-p  |  take only polymorphic sites (optional, by default all sites, constant and SNPs, are taken)|
+|-H  |  take also heterozygous sites (optional, by default only homozygous, requires -l report from vcf2alignment -H)|
+|-N  |  new temp files, don't re-use (optional, by default temp files are re-used if available at -t)|
+|-t  |  path to dir for temp file  (optional, default: -t $tmppath)|
+
+In our example, we use a toy VCF file that contains read-mapping positions on chromosomes Bd2 of *Brachypodium distachyon* and Chr01 of *Brachypodium stacei*, the LOG file computed in 2.2 section and the syntenic positions computed in 2.1 section (see config file for ´vcf2synteny´):
  
     ./vcf2synteny -v sample_data/BdisBd2_BstaChr01.vcf.gz -c sample_data/config.synteny.tsv -l BdisBd2_BstaChr01.vcf.log.gz \
 			-d 5 -m 3 -r Bdis -o BdisBd2_BstaChr01.DP5.M3.synteny.fasta
