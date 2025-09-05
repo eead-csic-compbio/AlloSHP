@@ -1,8 +1,6 @@
 # AlloSHP
 
-This protocol computes Whole Genome Alignments (WGA) to discover Single Homeologous Polymorphisms (SHPs) out of reads mapped to concatenated 
-genome sequences. It requires FASTA and [VCF](https://en.wikipedia.org/wiki/Variant_Call_Format) input files and 
-produces multiple sequence alignments of subgenomes that make up allopolyploids.
+A command-line tool for detecting and extracting single homeologous polymorphisms (SHPs) from the subgenomes of allopolyploid species. This tool integrates three main algorithms, WGA, VCF2ALIGNMENT and VCF2SYNTENY, and allows the detection of SHPs for the study of diploid-polyploid complexes with available diploid progenitor genomes. It requires FASTA of the reference genomes and [VCF](https://en.wikipedia.org/wiki/Variant_Call_Format) input files and produces multiple sequence alignments (MSA) of the SHP for each allopolyploid subgenome.
 
 Rubén Sancho (1,2), Pilar Catalán (2), Bruno Contreras Moreira (1,3)
 
@@ -177,7 +175,7 @@ Note this requires a config file that matches sample names in the VCF file to th
 (see example [sample_data/config.tsv](https://github.com/eead-csic-compbio/vcf2alignment/blob/master/sample_data/config.tsv)).
 A report log file with valid 1-based coordinates (-l) is saved to be used in the last step.
 
-The table shows the flags of vcf2alignment:
+The table shows the flags of `vcf2alignment`:
 
 |flag|note|
 |:-------|:---|
@@ -200,7 +198,7 @@ In our example, we use a toy VCF file that contains read-mapping positions on ch
 
 Script `vcf2synteny` parses the VCF file obtained from reads mapped to multiple concatenated reference genomes, the LOG file of valid loci computed by `vcf2alignment`, and the synteny-based equivalent coordinates (BED file) computed by `WGA` to align the polymorphic loci referenced by syntenic positions, separating them on each reference genome, and defining them as SHPs. The resulting MSA will have as many subgenomes as reference genomes were used.
 
-The table shows the flags of ´vcf2synteny´:
+The table shows the flags of `vcf2synteny`:
 
 |flag|note|
 |:-------|:---|
@@ -219,7 +217,7 @@ The table shows the flags of ´vcf2synteny´:
 |-N  |  new temp files, don't re-use (optional, by default temp files are re-used if available at -t)|
 |-t  |  path to dir for temp file  (optional, default: -t $tmppath)|
 
-In our example, we use a toy VCF file that contains read-mapping positions on chromosomes Bd2 of *Brachypodium distachyon* and Chr01 of *Brachypodium stacei*, the LOG file computed in 2.2 section and the syntenic positions computed in 2.1 section (see config file for ´vcf2synteny´):
+In our example, we use a toy VCF file that contains read-mapping positions on chromosomes Bd2 of *Brachypodium distachyon* and Chr01 of *Brachypodium stacei*, the LOG file computed in 2.2 section by `vcf2alignment` and the syntenic positions computed in 2.1 section by `WGA` (see config file for `vcf2synteny`):
  
     ./vcf2synteny -v sample_data/BdisBd2_BstaChr01.vcf.gz -c sample_data/config.synteny.tsv -l BdisBd2_BstaChr01.vcf.log.gz \
 			-d 5 -m 3 -r Bdis -o BdisBd2_BstaChr01.DP5.M3.synteny.fasta
