@@ -89,19 +89,19 @@ The table shows the flags of WGA:
 
 |flag|note|
 |:-------|:---|
-|-h  | this message |
-|-A  | FASTA file of genome A (example: -A speciesA.fna[.gz]) |
-|-B  | FASTA file of genome B example: -B speciesB.fna[.gz]) |
-|-o  | output folder (optional, default: speciesA.speciesB) |
-|-l  | min contig length [Mbp] (optional, default: -l $minlenMb) |
-|-m  | FASTA files already soft-masked (optional, default: masked with Red) |
-|-n  | number of cores  (optional, some tasks only, default: $ncores) |
-|-g  | use multithreaded GSAlign algorithm (optional, default: Cgaln) |
-|-C  | parameters for Cgaln aligner (optional, default: -C '$WGA_Cgaln_params') |
-|-I  | parameters for Cgaln indexer (optional, default: -I '$WGA_index_params') |
-|-G  | parameters for GSAlign aligner (optional, default: -G '$WGA_GSAlign_params') |
-|-M  | parameters for utils/mapcoords.pl (optional, default: -M '$MAPCOORDS_params'. 1st: max ratio of mapped positions in other blocks; 2nd: max ratio of coordinates with multiple positions in the same block) |
-|-c  | print credits and checks install (recommended) |
+|-h  | this message|
+|-A  | FASTA file of genome A (example: -A speciesA.fna[.gz])|
+|-B  | FASTA file of genome B example: -B speciesB.fna[.gz])|
+|-o  | output folder (optional, default: speciesA.speciesB)|
+|-l  | min contig length [Mbp] (optional, default: -l $minlenMb)|
+|-m  | FASTA files already soft-masked (optional, default: masked with Red)|
+|-n  | number of cores  (optional, some tasks only, default: $ncores)|
+|-g  | use multithreaded GSAlign algorithm (optional, default: Cgaln)|
+|-C  | parameters for Cgaln aligner (optional, default: -C '$WGA_Cgaln_params')|
+|-I  | parameters for Cgaln indexer (optional, default: -I '$WGA_index_params')|
+|-G  | parameters for GSAlign aligner (optional, default: -G '$WGA_GSAlign_params')|
+|-M  | parameters for utils/mapcoords.pl (optional, default: -M '$MAPCOORDS_params'. 1st: max ratio of mapped positions in other blocks; 2nd: max ratio of coordinates with multiple positions in the same block)|
+|-c  | print credits and checks install (recommended)|
 
 In our example, we set *B. distachyon* as the master reference genome for being the best quality assembly at hand
 (see 2.3 below).
@@ -173,7 +173,24 @@ Script `vcf2alignment` parses an input VCF file, which might be GZIP/BZIP2 compr
 and produces a list of valid sites considering min read depth (-d) and max missing data (-m).
 Note this requires a config file that matches sample names in the VCF file to their human-readable names
 (see example [sample_data/config.tsv](https://github.com/eead-csic-compbio/vcf2alignment/blob/master/sample_data/config.tsv)).
-A report log file with valid 1-based coordinates (-l) is saved to be used in the last step:
+A report log file with valid 1-based coordinates (-l) is saved to be used in the last step.
+
+The table shows the flags of vcf2alignment:
+
+|flag|note|
+|:-------|:---|
+|-h  | this message|
+|-v  | input VCF file | (example: -v data.vcf.gz)|
+|-c  | input TSV config file | (example: -c config.tsv)|
+|-l  | output report file name, 1-based coordinates | (example: -l vcf.report.log.gz)|
+|-o  | output MSA file name | (optional, example: -o out.fasta)|
+|-d  | min read depth at each position for each sample | (optional, example: -d 3, default -d $mindepth, use -d 0 if VCF file lacks DP)|
+|-m  | max missing samples | (optional, example: -m 10, default -m $maxmissing)|
+|-f  | output format | (optional, example: -f nexus, default -f $outformat)|
+|-p  | take only polymorphic sites | (optional, by default all sites, constant and SNPs, are taken)|
+|-H  | take also heterozygous sites | (optional, by default only homozygous are taken)|
+
+In our example, we use a toy VCF file that contains read-mapping positions on chromosomes Bd2 of Brachypodium distachyon and Chr01 of Brachypodium stacei:
 
     ./vcf2alignment -v sample_data/BdisBd2_BstaChr01.vcf.gz -c sample_data/config.tsv -l BdisBd2_BstaChr01.vcf.log.gz -d 5 -m 3
 
