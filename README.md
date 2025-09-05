@@ -1,7 +1,7 @@
 # AlloSHP
 
 This protocol computes Whole Genome Alignments (WGA) to discover Single Homeologous Polymorphisms (SHPs) out of reads mapped to concatenated 
-genome sequeces. It requires FASTA and [VCF](https://en.wikipedia.org/wiki/Variant_Call_Format) input files and 
+genome sequences. It requires FASTA and [VCF](https://en.wikipedia.org/wiki/Variant_Call_Format) input files and 
 produces multiple sequence alignments of subgenomes that make up allopolyploids.
 
 Rubén Sancho (1,2), Pilar Catalán (2), Bruno Contreras Moreira (1,3)
@@ -21,7 +21,7 @@ which can be installed locally as follows:
     git clone https://github.com/eead-csic-compbio/AlloSHP.git
     cd AlloSHP
     make install
-    # optionally, takes a couple minutes
+    # optionally, takes a couple of minutes
     make test
 
 #### Troubleshooting: conda environment
@@ -82,11 +82,30 @@ Note that the steps below can be run in one go as follows:
 ### 2.1) Whole-genome alignments (WGA)
 
 WGAs must be computed to find syntenic segments among the reference genomes available for read mapping.
-By default this uses [CGaln](https://github.com/rnakato/Cgaln),
+By default, this uses [CGaln](https://github.com/rnakato/Cgaln),
 which requires the input sequences to be [soft-masked](https://genomevolution.org/wiki/index.php/Masked) ahead.
-In our example we set *B. distachyon* as the master reference genome for being the best quality assembly at hand
+
+The table shows the flags of WGA:
+
+|flag|note|
+|:-------|:---|
+|-h  | this message |
+|-A  | FASTA file of genome A (example: -A speciesA.fna[.gz]) |
+|-B  | FASTA file of genome B example: -B speciesB.fna[.gz]) |
+|-o  | output folder (optional, default: speciesA.speciesB) |
+|-l  | min contig length [Mbp] (optional, default: -l $minlenMb) |
+|-m  | FASTA files already soft-masked (optional, default: masked with Red) |
+|-n  | number of cores  (optional, some tasks only, default: $ncores) |
+|-g  | use multithreaded GSAlign algorithm (optional, default: Cgaln) |
+|-C  | parameters for Cgaln aligner (optional, default: -C '$WGA_Cgaln_params') |
+|-I  | parameters for Cgaln indexer (optional, default: -I '$WGA_index_params') |
+|-G  | parameters for GSAlign aligner (optional, default: -G '$WGA_GSAlign_params') |
+|-M  | parameters for utils/mapcoords.pl (optional, default: -M '$MAPCOORDS_params'. 1st: max ratio of mapped positions in other blocks; 2nd: max ratio of coordinates with multiple positions in the same block) |
+|-c  | print credits and checks install (recommended) |
+
+In our example, we set *B. distachyon* as the master reference genome for being the best quality assembly at hand
 (see 2.3 below).
-In this we now find out syntenic segments on the other genomes, defined as secondary genomes (*B. stacei*). 
+In this, we now find out syntenic segments on the other genomes, defined as secondary genomes (*B. stacei*). 
 Each individual reference is hence considered a **subgenome** to which reads map:
 
     ./WGA -A sample_data/Bdis.fna.gz -B sample_data/Bsta.fna.gz
@@ -132,7 +151,7 @@ This produces the following output:
     # time used (s): 119 memory used (Mb): 407.9
 
 The most important result files are the 0-based **BED** list of syntenic positions, which will be used in the last step,
-and the **PDF** dotplot, which requires `gnuplot` in your syste, which must be inspected to assess the quality of
+and the **PDF** dotplot, which requires `gnuplot` in your system, which must be inspected to assess the quality of
 the WGA. Note that flags `-I` and `-C` can be used to tweak the WGA parameters after inspection of the dotplot.
 Also, you can use `-o` to set your own **output folder**.
 
@@ -140,7 +159,7 @@ Alternatively, the GSAlign WGA algorithm can be invoked as follows, with flag `-
  
     ./WGA -A sample_data/Bdis.fna.gz -B sample_data/Bsta.fna.gz -g
 
-Note that you can change the default GSAlign settings with optional flag `-G`. This might be required for your genomes of interest.
+Note that you can change the default GSAlign settings with the optional flag `-G`. This might be required for your genomes of interest.
 
 ![whole-genome alignment plot](./pics/Bdis.fna.gz.Bsta.fna.gz_Cgaln_-K11_-BS10000_-X12000_-fc_-cons.dot.png)
 *Figure 1. WGA dotplot resulting from Cgaln alignment of two homologous chromosomes.*
@@ -150,7 +169,7 @@ Note that you can change the default GSAlign settings with optional flag `-G`. T
 
 ### 2.2) Filtering valid positions in the VCF file
 
-Script `vcf2alignment` parses an input VCF file, with might be GZIP/BZIP2 compressed, 
+Script `vcf2alignment` parses an input VCF file, which might be GZIP/BZIP2 compressed, 
 and produces a list of valid sites considering min read depth (-d) and max missing data (-m).
 Note this requires a config file that matches sample names in the VCF file to their human-readable names
 (see example [sample_data/config.tsv](https://github.com/eead-csic-compbio/vcf2alignment/blob/master/sample_data/config.tsv)).
@@ -172,11 +191,11 @@ which also contains:
 + a path to the BED file obtained in step 2.1
 + regular expressions to match chromosome names from reference genomes used in step 2.1, can use those proposed by `WGA`
 
-Note that `vcf2synteny` performs several sort operations. With large genomes these might require significant disk space to save temporary results.
-By default these are stored in `/tmp` but this can be changed with flag `-t`. The examples in the [Makefile](./Makefile) use `-t` 
+Note that `vcf2synteny` performs several sort operations. With large genomes, these might require significant disk space to save temporary results.
+By default, these are stored in `/tmp`, but this can be changed with the flag `-t`. The examples in the [Makefile](./Makefile) use `-t` 
 pointing to the same **output folder** used by `WGA`, so that all files are contained there and can be safely removed if needed.
  
-Anyway, this scripts produces the following output:
+Anyway, this script produces the following output:
 
     # computing Bdis.Bsta.coords.positions.tsv (3 steps)
 
@@ -244,8 +263,8 @@ This completes this protocol.
 
 ### 2.4) Other uses: get a multiple sequence alignment of samples in a VCF file
 
-Working with collaborators we have noticed that often you need to produce a multi FASTA file out of the samples in a VCF file.
-A typical reason for this is to compute a phylogenetic tree. Please note that `vcf2alignment` can be used exactly for this as follows,
+Working with collaborators, we have noticed that often you need to produce a multi-FASTA file out of the samples in a VCF file.
+A typical reason for this is to compute a phylogenetic tree. Please note that `vcf2alignment` can be used exactly for this, as follows,
 note the optional -o flag. If the input VCF file does not contain DP data, or you want to take all base calls regardless of their depth,
 add also -d: 
 
