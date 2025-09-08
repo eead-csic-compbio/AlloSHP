@@ -113,7 +113,7 @@ This produces the following main output files (see below and square):
 + LOG: Bdis.fna.gz.Bsta.fna.gz/Bdis.fna.gz.Bsta.fna.gz_Cgaln_-K11_-BS10000_-X4000_0.25_0.05.coords.log
 + PDF: Bdis.fna.gz.Bsta.fna.gz/Bdis.fna.gz.Bsta.fna.gz_Cgaln_-K11_-BS10000_-X4000_0.25_0.05.dot.pdf
 
-Screen processing:
+And this standard out in the terminal:
 
     ## ./WGA -A sample_data/Bdis.fna.gz -B sample_data/Bsta.fna.gz -o Bdis.fna.gz.Bsta.fna.gz -l 1 -m 1 -G 0 -N -K11 -BS10000 -C -X4000 -M 0.25 0.05 -n 4
 
@@ -155,10 +155,10 @@ Screen processing:
 
 The most important result files are the 0-based **BED** list of syntenic positions, which will be used in the last step,
 and the **PDF** dotplot, which requires `gnuplot` in your system, which must be inspected to assess the quality of
-the WGA. Note that flags `-I` and `-C` can be used to tweak the WGA parameters after inspection of the dotplot.
+the WGA. Note that flags `-N` and `-C` can be used to tweak the WGA parameters after inspection of the dotplot.
 Also, you can use `-o` to set your own **output folder**.
 
-The BED file by `WGA`:
+The BED file produced by `WGA` looks like this:
 
     # chrA  posA    endA    baseA   strandA chrB    posB    endB    baseB   block   SNP
     Bd2     44989686        44989687        A       -       Chr01   13393558        13393559        A       10      .
@@ -183,15 +183,16 @@ The BED file by `WGA`:
     + posB: Start position regarding the Secondary reference genome
     + endB: End position regarding the Secondary reference genome
     + baseB: Nucleotide base regarding the Secondary reference genome
-    + block: Syntenic block according to CGaln results
-    + SNP: Presence of polymorphism between reference genomes
+    + block: Syntenic block according to CGaln
+    + SNP: SNP between reference genomes
  
 
 Alternatively, the GSAlign WGA algorithm can be invoked as follows, with flag `-g`:
  
     ./WGA -A sample_data/Bdis.fna.gz -B sample_data/Bsta.fna.gz -g
 
-Note that you can change the default GSAlign settings with the optional flag `-G`. This might be required for your genomes of interest.
+Note that you can change the default GSAlign settings with the optional flag `-G`. 
+This might be required for your genomes of interest.
 
 ![whole-genome alignment plot](./pics/Bdis.fna.gz.Bsta.fna.gz_Cgaln_-K11_-BS10000_-X12000_-fc_-cons.dot.png)
 
@@ -228,11 +229,11 @@ In our example, we use a toy VCF file that contains read-mapping positions on ch
 
     ./vcf2alignment -v sample_data/BdisBd2_BstaChr01.vcf.gz -c sample_data/config.tsv -l BdisBd2_BstaChr01.vcf.log.gz -d 5 -m 3
 
-This produces the following main output file (see below and square):
+This produces the following main output file:
 
 + LOG: BdisBd2_BstaChr01.vcf.log.gz
 
-The LOG file by `vcf2alignment`:
+Its contents look like this:
 
     # number of samples found=6
     # valid locus: Bd2_15643 3 A
@@ -308,8 +309,10 @@ which also contains:
 + a path to the BED file obtained in step 2.1
 + regular expressions to match chromosome names from reference genomes used in step 2.1, can use those proposed by `WGA`
 
-Note that `vcf2synteny` performs several sort operations. With large genomes, these might require significant disk space to save temporary results.
-By default, these are stored in `/tmp`, but this can be changed with the flag `-t`. The examples in the [Makefile](./Makefile) use `-t` 
+Note that `vcf2synteny` performs several sort operations. 
+With large genomes, these might require significant disk space to save temporary results.
+By default, these are stored in `/tmp`, but this can be changed with the flag `-t`. 
+The examples in the [Makefile](./Makefile) use `-t` 
 pointing to the same **output folder** used by `WGA`, so that all files are contained there and can be safely removed if needed.
  
 Anyway, this script produces the following output:
@@ -375,7 +378,7 @@ The first 200 positions of the MSA derived from the sample data look as follows:
     >Bsta_TE4.3_Bsta
     NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNAATCAAGCGCGCTGCGTGTCGTCGCGTCTCGGGCCATGCCGCTTTTCATCTGGCCGCCCTGGTTGCGCGACACCC
 
-NOTE: **Artifactual subgenomes** must be eliminated from the final multiple sequence alignment (MSA). If the ploidy, and therefore the number of subgenomes expected to be recovered, is unknown, we propose using a cross-validation criterion based on the percentage of SHPs recovered in diploid samples. In diploid samples, only one predominant genome/subgenome is expected to be recovered. For each subgenome, the highest SHP percentage obtained in the diploid samples from the non-specific mappings will be set as a threshold. *More details in the publication*
+NOTE: **Artifactual subgenomes** must be eliminated from the final multiple sequence alignment (MSA). If the ploidy, and therefore the number of subgenomes expected to be recovered, is unknown, we propose using a cross-validation criterion based on the percentage of SHPs recovered in diploid samples. In diploid samples, only one predominant genome/subgenome is expected to be recovered. For each subgenome, the highest SHP percentage obtained in the diploid samples from the non-specific mappings will be set as a threshold. *More details in the publication*.
 
 This completes this protocol.
 
