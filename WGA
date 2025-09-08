@@ -45,7 +45,7 @@ my ($root, $cmd, $name, $tempdirA, $tempdirB, $chrcodesA, $chrcodesB);
 my ($lenfile, $tmpWGAfile, $WGAfile, $WGAdotfile, $WGAscriptfile);
 my ($outfolder, $outBEDfile, $outLOGfile, $outPDFfile);
 
-getopts('hcmgo:M:G:n:X:C:l:A:B:', \%opts);
+getopts('hcmgo:M:G:n:N:C:l:A:B:', \%opts);
 
 if(($opts{'h'})||(scalar(keys(%opts))==0))
 {
@@ -59,7 +59,7 @@ if(($opts{'h'})||(scalar(keys(%opts))==0))
   print "-n number of cores                     (optional, some tasks only, default: $ncores\n";
   print "-g use multithreaded GSAlign algorithm (optional, default: Cgaln)\n";              
   print "-C parameters for Cgaln aligner        (optional, default: -C '$WGA_Cgaln_params')\n";
-  print "-X parameters for Cgaln indexer        (optional, default: -X '$WGA_index_params')\n";
+  print "-N parameters for Cgaln indexer        (optional, default: -N '$WGA_index_params')\n";
   print "-G parameters for GSAlign aligner      (optional, default: -G '$WGA_GSAlign_params')\n";
   print "-M parameters for utils/mapcoords.pl   (optional, default: -M '$MAPCOORDS_params' ,\n";
   print "                                        1st: max ratio of mapped positions in other blocks,\n";
@@ -148,8 +148,8 @@ if(defined($opts{'g'})) { # GSAlign
     $softmask = 0
   }
 
-  if(defined($opts{'I'})) {
-    $WGA_index_params = $opts{'I'}
+  if(defined($opts{'N'})) {
+    $WGA_index_params = $opts{'N'}
   }
 
   if(defined($opts{'C'})) {
@@ -164,7 +164,7 @@ if(defined($opts{'g'})) { # GSAlign
   $root =~ s/\s+/_/g;
   
   warn "## $0 -A $fileA -B $fileB -o $outfolder -l $minlenMb -m $softmask -G $use_gsalign ".
-    "-X $WGA_index_params -C $WGA_Cgaln_params -M $MAPCOORDS_params -n $ncores\n\n";
+    "-N $WGA_index_params -C $WGA_Cgaln_params -M $MAPCOORDS_params -n $ncores\n\n";
 }
 
 warn "## root: $root\n\n";
@@ -174,7 +174,7 @@ warn "## root: $root\n\n";
 my $mu = Memory::Usage->new();
 $mu->record('start');
 
-# 1) foreach FASTA file remove short sequences
+# 1) for each FASTA file remove short sequences
 my ($filtA, $chrlenA, $chrorderA) = filter_FASTA_sequences( $fileA, $outfolder, $minlenMb, $GZIPEXE, $BZIP2EXE );
 my ($filtB, $chrlenB, $chrorderB) = filter_FASTA_sequences( $fileB, $outfolder, $minlenMb, $GZIPEXE, $BZIP2EXE );
 
