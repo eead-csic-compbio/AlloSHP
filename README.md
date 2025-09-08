@@ -79,11 +79,11 @@ Note that the steps below can be run in one go as follows:
 
 ### 2.1) Whole-genome alignments (WGA)
 
-Script `WGA` must be computed to find syntenic segments among the reference genomes available for read mapping.
+Script `WGA` must be computed to find syntenic segments among the diploid reference genomes available for read mapping.
 By default, this uses [CGaln](https://github.com/rnakato/Cgaln),
-which requires the input sequences to be [soft-masked](https://genomevolution.org/wiki/index.php/Masked) ahead.
-
-The table shows the flags of WGA:
+which requires the input sequences to be [soft-masked](https://genomevolution.org/wiki/index.php/Masked) 
+(this is also taken care of by the script).
+The table shows the flags of this script:
 
 |flag|note|
 |:-------|:---|
@@ -95,16 +95,15 @@ The table shows the flags of WGA:
 |-m  | FASTA files already soft-masked (optional, default: masked with Red)|
 |-n  | number of cores  (optional, some tasks only, default: $ncores)|
 |-g  | use multithreaded GSAlign algorithm (optional, default: Cgaln)|
-|-C  | parameters for Cgaln aligner (optional, default: -C '$WGA_Cgaln_params')|
-|-I  | parameters for Cgaln indexer (optional, default: -I '$WGA_index_params')|
-|-G  | parameters for GSAlign aligner (optional, default: -G '$WGA_GSAlign_params')|
-|-M  | parameters for utils/mapcoords.pl (optional, default: -M '$MAPCOORDS_params'. 1st: max ratio of mapped positions in other blocks; 2nd: max ratio of coordinates with multiple positions in the same block)|
+|-C  | parameters for Cgaln aligner (optional, default: -C '-X4000'), where X stands for X-drop-off threshold for gapped extension of HSP ([paper](https://bmcbioinformatics.biomedcentral.com/articles/10.1186/1471-2105-11-224))|
+|-I  | parameters for Cgaln indexer (optional, default: -I '-K11 -BS10000'), where K is k-mer size and BS block size ([paper](https://bmcbioinformatics.biomedcentral.com/articles/10.1186/1471-2105-11-224))|
+|-G  | parameters for GSAlign aligner (optional, default: -G '-no_vcf -one'), see [paper](https://bmcgenomics.biomedcentral.com/articles/10.1186/s12864-020-6569-1)|
+|-M  | parameters for utils/mapcoords.pl (optional, default: -M '0.25 0.05'. 1st: max ratio of mapped positions in other blocks; 2nd: max ratio of coordinates with multiple positions in the same block)|
 |-c  | print credits and checks install (recommended)|
 
 In our example, we set *B. distachyon* as the master reference genome for being the best quality assembly at hand
-(see 2.3 below).
-In this, we now find out syntenic segments on the other genomes, defined as secondary genomes (*B. stacei*). 
-Each individual reference is hence considered a **subgenome** to which reads map:
+(see section 2.3 below). We now find out syntenic segments on the other genomes, defined as secondary genomes (*B. stacei*). 
+Each diploid reference is hence considered a **subgenome** to which reads map:
 
     ./WGA -A sample_data/Bdis.fna.gz -B sample_data/Bsta.fna.gz
 
@@ -184,9 +183,9 @@ The table shows the flags of `vcf2alignment`:
 |-c  | input TSV config file (example: -c config.tsv)|
 |-l  | output report file name, 1-based coordinates (example: -l vcf.report.log.gz)|
 |-o  | output MSA file name (optional, example: -o out.fasta)|
-|-d  | min read depth at each position for each sample (optional, example: -d 3, default -d $mindepth, use -d 0 if VCF file lacks DP)|
-|-m  | max missing samples (optional, example: -m 10, default -m $maxmissing)|
-|-f  | output format (optional, example: -f nexus, default -f $outformat)|
+|-d  | min read depth at each position for each sample (optional, example: -d 3, default -d 3, use -d 0 if VCF file lacks DP)|
+|-m  | max missing samples (optional, example: -m 10, default -m 10)|
+|-f  | output format (optional, example: -f nexus, default -f fasta)|
 |-p  | take only polymorphic sites (optional, by default all sites, constant and SNPs, are taken)|
 |-H  | take also heterozygous sites (optional, by default only homozygous are taken)|
 
@@ -208,8 +207,8 @@ The table shows the flags of `vcf2synteny`:
 |-c  |  input TSV config file (example: -c config.synteny.tsv)|
 |-o  |  output FASTA file name (example: -o out.fasta)|
 |-r  |  master reference genome (example: -r Bdis)|
-|-d  |  min depth of called SNPs (optional, example: -d 3, default -d $mindepth)|
-|-m  |  max missing samples (optional, example: -m 10, default -m $maxmissing)|
+|-d  |  min depth of called SNPs (optional, example: -d 3, default -d 3)|
+|-m  |  max missing samples (optional, example: -m 10, default -m 10)|
 |-V  |  output VCF file name (optional, coordinates from -r genome, example: -f out.vcf)|
 |-1  |  syntenic coords are 1-based (optional, 0-based/BED by default, WGA in -c config.synteny.tsv)|
 |-p  |  take only polymorphic sites (optional, by default all sites, constant and SNPs, are taken)|
