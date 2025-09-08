@@ -158,6 +158,34 @@ and the **PDF** dotplot, which requires `gnuplot` in your system, which must be 
 the WGA. Note that flags `-I` and `-C` can be used to tweak the WGA parameters after inspection of the dotplot.
 Also, you can use `-o` to set your own **output folder**.
 
+The BED file by `vcf2synteny`:
+    # chrA  posA    endA    baseA   strandA chrB    posB    endB    baseB   block   SNP
+    Bd2     44989686        44989687        A       -       Chr01   13393558        13393559        A       10      .
+    Bd2     44989685        44989686        T       -       Chr01   13393559        13393560        T       10      .
+    Bd2     44989684        44989685        C       -       Chr01   13393560        13393561        C       10      .
+    Bd2     44989683        44989684        C       -       Chr01   13393561        13393562        C       10      .
+    Bd2     44989682        44989683        T       -       Chr01   13393562        13393563        T       10      .
+    Bd2     44989681        44989682        G       -       Chr01   13393563        13393564        G       10      .
+    Bd2     44989680        44989681        C       -       Chr01   13393564        13393565        C       10      .
+    Bd2     44989679        44989680        T       -       Chr01   13393565        13393566        T       10      .
+    Bd2     44989678        44989679        G       -       Chr01   13393566        13393567        A       10      SNP
+    Bd2     44989677        44989678        C       -       Chr01   13393567        13393568        C       10      .
+    ...
+
+    Where:
+    + chrA: Name of the chromosome regarding the Master reference genome
+    + posA: Start position regarding the Master reference genome
+    + endA: End position regarding the Master reference genome
+    + baseA: Nucleotide base regarding the Master reference genome
+    + strandA: Defined as + (forward) or - (reverse) regarding the Master reference genome
+    + chrB: Name of the chromosome regarding the Secondary reference genome
+    + posB: Start position regarding the Secondary reference genome
+    + endB: End position regarding the Secondary reference genome
+    + baseB: Nucleotide base regarding the Secondary reference genome
+    + block: Syntenic block according to CGaln results
+    + SNP: Presence of polymorphism between reference genomes
+ 
+
 Alternatively, the GSAlign WGA algorithm can be invoked as follows, with flag `-g`:
  
     ./WGA -A sample_data/Bdis.fna.gz -B sample_data/Bsta.fna.gz -g
