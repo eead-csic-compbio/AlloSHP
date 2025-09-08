@@ -45,15 +45,15 @@ test:
 				-o sample_data/results_test/BdisBd2_BstaChr01.DP5.M3.synteny.outg.fasta; \
 
 test_conda:
-	mkdir ${PREFIX}/sample_data/results_test && \
-	WGA -A ${PREFIX}/sample_data/Bdis.fna.gz -B ${PREFIX}/sample_data/Bsta.fna.gz && \
-	WGA -A ${PREFIX}/sample_data/Bdis.fna.gz -B ${PREFIX}/sample_data/outg_Osat.fna.gz && \
-	vcf2alignment -v ${PREFIX}/sample_data/BdisBd2_BstaChr01.vcf.gz -c ${PREFIX}/sample_data/config.tsv \
-		-l ${PREFIX}/sample_data/results_test/BdisBd2_BstaChr01.vcf.log.gz -d 5 -m 3 && \
-	vcf2synteny -v ${PREFIX}/sample_data/BdisBd2_BstaChr01.vcf.gz -c ${PREFIX}/sample_data/config.outg.synteny.tsv \
-		-l ${PREFIX}/sample_data/results_test/BdisBd2_BstaChr01.vcf.log.gz \
+	mkdir ${CONDA_PREFIX}/sample_data/results_test && \
+	WGA -A ${CONDA_PREFIX}/sample_data/Bdis.fna.gz -B ${CONDA_PREFIX}/sample_data/Bsta.fna.gz && \
+	WGA -A ${CONDA_PREFIX}/sample_data/Bdis.fna.gz -B ${CONDA_PREFIX}/sample_data/outg_Osat.fna.gz && \
+	vcf2alignment -v ${CONDA_PREFIX}/sample_data/BdisBd2_BstaChr01.vcf.gz -c ${CONDA_PREFIX}/sample_data/config.tsv \
+		-l ${CONDA_PREFIX}/sample_data/results_test/BdisBd2_BstaChr01.vcf.log.gz -d 5 -m 3 && \
+	vcf2synteny -v ${CONDA_PREFIX}/sample_data/BdisBd2_BstaChr01.vcf.gz -c ${CONDA_PREFIX}/sample_data/config.outg.synteny.tsv \
+		-l ${CONDA_PREFIX}/sample_data/results_test/BdisBd2_BstaChr01.vcf.log.gz \
 		-d 5 -m 3 -r Bdis \
-		-o ${PREFIX}/sample_data/results_test/BdisBd2_BstaChr01.DP5.M3.synteny.outg.fasta
+		-o ${CONDA_PREFIX}/sample_data/results_test/BdisBd2_BstaChr01.DP5.M3.synteny.outg.fasta
 
 # Cgaln only, all logs saved
 demo: 
