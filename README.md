@@ -96,7 +96,7 @@ The table shows the flags of this script:
 |-n  | number of cores  (optional, some tasks only, default: $ncores)|
 |-g  | use multithreaded GSAlign algorithm (optional, default: Cgaln)|
 |-C  | parameters for Cgaln aligner (optional, default: -C '-X4000'), where X stands for X-drop-off threshold for gapped extension of HSP ([paper](https://bmcbioinformatics.biomedcentral.com/articles/10.1186/1471-2105-11-224))|
-|-I  | parameters for Cgaln indexer (optional, default: -I '-K11 -BS10000'), where K is k-mer size and BS block size ([paper](https://bmcbioinformatics.biomedcentral.com/articles/10.1186/1471-2105-11-224))|
+|-N  | parameters for Cgaln indexer (optional, default: -N '-K11 -BS10000'), where K is k-mer size and BS block size ([paper](https://bmcbioinformatics.biomedcentral.com/articles/10.1186/1471-2105-11-224))|
 |-G  | parameters for GSAlign aligner (optional, default: -G '-no_vcf -one'), see [paper](https://bmcgenomics.biomedcentral.com/articles/10.1186/s12864-020-6569-1)|
 |-M  | parameters for utils/mapcoords.pl (optional, default: -M '0.25 0.05'. 1st: max ratio of mapped positions in other blocks; 2nd: max ratio of coordinates with multiple positions in the same block)|
 |-c  | print credits and checks install (recommended)|
@@ -109,7 +109,7 @@ Each diploid reference is hence considered a **subgenome** to which reads map:
 
 This produces the following output:
 
-    ## ./WGA -A sample_data/Bdis.fna.gz -B sample_data/Bsta.fna.gz -o Bdis.fna.gz.Bsta.fna.gz -l 1 -m 1 -G 0 -I -K11 -BS10000 -C -X4000 -M 0.25 0.05 -n 4
+    ## ./WGA -A sample_data/Bdis.fna.gz -B sample_data/Bsta.fna.gz -o Bdis.fna.gz.Bsta.fna.gz -l 1 -m 1 -G 0 -N -K11 -BS10000 -C -X4000 -M 0.25 0.05 -n 4
 
     ## root: Bdis.fna.gz.Bsta.fna.gz_Cgaln_-K11_-BS10000_-X4000_0.25_0.05
 
