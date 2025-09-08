@@ -347,7 +347,7 @@ Anyway, this script produces the following output:
     # Bsta_TE4.3_Bdis variants: 0 / 762307
     # Bsta_TE4.3_Bsta variants: 754853 / 762307
 
-The resulting multiple sequence alignment (MSA) has as many lines per sample as references, which are handled as subgenomes.
+The resulting multiple sequence alignment (MSA) has as many lines per sample as references, which are handled as subgenomes (and artifactual subgenomes).
 The first 200 positions of the MSA derived from the sample data look as follows:
 
     >Bdis_ABR2_Bdis
@@ -374,6 +374,8 @@ The first 200 positions of the MSA derived from the sample data look as follows:
     NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
     >Bsta_TE4.3_Bsta
     NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNAATCAAGCGCGCTGCGTGTCGTCGCGTCTCGGGCCATGCCGCTTTTCATCTGGCCGCCCTGGTTGCGCGACACCC
+
+NOTE: **Artifactual subgenomes** must be eliminated from the final multiple sequence alignment (MSA). If the ploidy, and therefore the number of subgenomes expected to be recovered, is unknown, we propose using a cross-validation criterion based on the percentage of SHPs recovered in diploid samples. In diploid samples, only one predominant genome/subgenome is expected to be recovered. For each subgenome, the highest SHP percentage obtained in the diploid samples from the non-specific mappings will be set as a threshold. *More details in the publication*
 
 This completes this protocol.
 
