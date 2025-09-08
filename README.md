@@ -305,7 +305,7 @@ A typical reason for this is to compute a phylogenetic tree. Please note that `v
 note the optional -o flag. If the input VCF file does not contain DP data, or you want to take all base calls regardless of their depth,
 add also -d: 
 
-    ./vcf2alignment -v sample_data/BdisBd2_BstaChr01.vcf.gz -c sample_data/config.tsv -l kk.log.gz -d 0 -o BdisBd2_BstaChr01.fasta
+    ./vcf2alignment -v sample_data/BdisBd2_BstaChr01.vcf.gz -c sample_data/config.tsv -l BdisBd2_BstaChr01.log.gz -d 0 -o BdisBd2_BstaChr01.fasta
 
 ## 3) Citation
 
