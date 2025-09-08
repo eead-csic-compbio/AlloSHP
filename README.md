@@ -107,7 +107,7 @@ Each diploid reference is hence considered a **subgenome** to which reads map:
 
     ./WGA -A sample_data/Bdis.fna.gz -B sample_data/Bsta.fna.gz
 
-This produces the following main output files (see below and gray square):
+This produces the following main output files (see below and square):
 
 + BED: Bdis.fna.gz.Bsta.fna.gz/Bdis.fna.gz.Bsta.fna.gz_Cgaln_-K11_-BS10000_-X4000_0.25_0.05.bed
 + LOG: Bdis.fna.gz.Bsta.fna.gz/Bdis.fna.gz.Bsta.fna.gz_Cgaln_-K11_-BS10000_-X4000_0.25_0.05.coords.log
@@ -198,6 +198,51 @@ The table shows the flags of `vcf2alignment`:
 In our example, we use a toy VCF file that contains read-mapping positions on chromosomes Bd2 of *Brachypodium distachyon* and Chr01 of *Brachypodium stacei*:
 
     ./vcf2alignment -v sample_data/BdisBd2_BstaChr01.vcf.gz -c sample_data/config.tsv -l BdisBd2_BstaChr01.vcf.log.gz -d 5 -m 3
+
+This produces the following main output file (see below and square):
+
++ LOG: BdisBd2_BstaChr01.vcf.log.gz
+
+The LOG file by `vcf2alignment`:
+
+    # number of samples found=6
+    # valid locus: Bd2_15643 3 A
+    # valid locus: Bd2_15648 3 C
+    # valid locus: Bd2_16138 2 T
+    # ...
+    # valid locus: Chr01_8301300 3 A
+    # valid locus: Chr01_8301301 3 G
+    # number of valid loci=1746620
+    # number of polymorphic loci=22248
+
+    # stats (#SNPs):
+      ABR2.bam : 971194
+      ...
+      Bhyb26.bam : 1704849
+      ...
+
+    # stats per contig/chr (#SNPs):
+      ABR2.bam        Bd2     962203
+      ABR2.bam        Chr01   8991
+      ...
+      Bhyb26.bam      Bd2     945905
+      Bhyb26.bam      Chr01   758944
+      ...
+    # stats (#N):
+      ABR2.bam : 775426
+      ...
+      Bhyb26.bam : 41771
+      ...
+
+    # stats per contig/chr (#N):
+      ABR2.bam        Bd2     3670
+      ABR2.bam        Chr01   771756
+      ...
+      Bhyb26.bam      Bd2     19968
+      Bhyb26.bam      Chr01   21803
+      ...
+    
+
 
 ### 2.3) Producing a multiple sequence alignment of polyploid subgenomes
 
