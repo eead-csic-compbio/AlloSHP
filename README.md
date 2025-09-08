@@ -158,7 +158,7 @@ and the **PDF** dotplot, which requires `gnuplot` in your system, which must be 
 the WGA. Note that flags `-I` and `-C` can be used to tweak the WGA parameters after inspection of the dotplot.
 Also, you can use `-o` to set your own **output folder**.
 
-The BED file by `vcf2synteny`:
+The BED file by `WGA`:
 
     # chrA  posA    endA    baseA   strandA chrB    posB    endB    baseB   block   SNP
     Bd2     44989686        44989687        A       -       Chr01   13393558        13393559        A       10      .
