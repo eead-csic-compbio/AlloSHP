@@ -38,6 +38,7 @@ jobs:
 
       - name: Install dependencies
         run: |
+          sudo apt-get update
           sudo apt-get install -y wget python3 g++ gnuplot-qt libdb-dev cpanminus
           cpanm --sudo -v --installdeps --notest --cpanfile cpanfile .
           make install
