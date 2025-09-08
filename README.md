@@ -107,7 +107,11 @@ Each diploid reference is hence considered a **subgenome** to which reads map:
 
     ./WGA -A sample_data/Bdis.fna.gz -B sample_data/Bsta.fna.gz
 
-This produces the following output:
+This produces the following main output files (see below and gray square):
+
+BED: Bdis.fna.gz.Bsta.fna.gz/Bdis.fna.gz.Bsta.fna.gz_Cgaln_-K11_-BS10000_-X4000_0.25_0.05.bed
+LOG: Bdis.fna.gz.Bsta.fna.gz/Bdis.fna.gz.Bsta.fna.gz_Cgaln_-K11_-BS10000_-X4000_0.25_0.05.coords.log
+PDF: Bdis.fna.gz.Bsta.fna.gz/Bdis.fna.gz.Bsta.fna.gz_Cgaln_-K11_-BS10000_-X4000_0.25_0.05.dot.pdf
 
     ## ./WGA -A sample_data/Bdis.fna.gz -B sample_data/Bsta.fna.gz -o Bdis.fna.gz.Bsta.fna.gz -l 1 -m 1 -G 0 -N -K11 -BS10000 -C -X4000 -M 0.25 0.05 -n 4
 
