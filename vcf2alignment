@@ -42,6 +42,14 @@ my $GZIPEXE  = 'gzip';
 # utilities shipping with script
 my $RM2LINES = "$Bin/utils/rm_double_lines.pl";
 
+# read version.txt
+my $VERSION = 'XXXX';
+open(VERSION,"$Bin/version.txt");
+while(<VERSION>) {
+  if(/^(\S+)/){ $VERSION = $1 }
+}
+close(VERSION);
+
 my %opts;
 my ($filename,$configfile,$reportfilename,$outfilename,$het) = ('','','','',0);
 my ($raw_reportfilename);
@@ -62,7 +70,8 @@ if(($opts{'h'})||(scalar(keys(%opts))==0)) {
   print "-m max missing samples                             (optional, example: -m 10, default -m $maxmissing\n";
   print "-f output format                                   (optional, example: -f nexus, default -f $outformat)\n";
   print "-p take only polymorphic sites                     (optional, by default all sites, constant and SNPs, are taken)\n";
-  print "-H take also heterozygous sites                    (optional, by default only homozygous are taken)\n\n";
+  print "-H take also heterozygous sites                    (optional, by default only homozygous are taken)\n";
+  print "\nversion: $VERSION\n";
   print "\nPrimary citation: https://www.biorxiv.org/content/10.1101/2025.07.17.665301v1\n";
   exit(0);
 }

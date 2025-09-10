@@ -108,6 +108,7 @@ if(($opts{'h'})||(scalar(keys(%opts))==0)) {
   print "-H take also heterozygous sites            (optional, by default only homozygous, requires -l report from vcf2alignment -H)\n";
   print "-N new temp files, don't re-use            (optional, by default temp files are re-used if available at -t)\n";
   print "-t path to dir for temp file               (optional, default: -t $tmppath)\n";
+  print "\nversion: $VERSION\n";
   print "\nPrimary citation: https://www.biorxiv.org/content/10.1101/2025.07.17.665301v1\n";
   exit(0);
 } 

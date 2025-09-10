@@ -37,6 +37,14 @@ my $ALN2FASTA  = "$Bin/utils/aln2fasta.pl";
 my $FASTA2DOT  = "$Bin/utils/fasta2dot.pl";
 my $MAPCOORDS  = "$Bin/utils/mapcoords.pl";
 
+# read version.txt
+my $VERSION = 'XXXX';
+open(VERSION,"$Bin/version.txt");
+while(<VERSION>) {
+  if(/^(\S+)/){ $VERSION = $1 }
+}
+close(VERSION);
+
 my %opts;
 my ($fileA, $fileB, $minlenMb, $ncores, $softmask, $use_gsalign) = ('', '', 1.0, 4, 1, 0);
 my ($WGA_Cgaln_params, $WGA_index_params) = ('-X4000', '-K11 -BS10000');
@@ -68,6 +76,7 @@ if(($opts{'h'})||(scalar(keys(%opts))==0))
   print "                                        2nd: max ratio of coordinates with multiple positions in same block)\n";
   print "-t path to dir for temp files          (optional, default: -t $tmppath)\n";
   print "-c print credits and checks install    (recommended)\n";
+  print "\nversion: $VERSION\n";
   exit(0);
 }
 
