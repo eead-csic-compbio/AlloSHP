@@ -105,6 +105,7 @@ The table shows the flags of this script:
 |-N  | parameters for Cgaln indexer (optional, default: -N '-K11 -BS10000'), where K is k-mer size and BS block size ([paper](https://bmcbioinformatics.biomedcentral.com/articles/10.1186/1471-2105-11-224))|
 |-G  | parameters for GSAlign aligner (optional, default: -G '-no_vcf -one'), see [paper](https://bmcgenomics.biomedcentral.com/articles/10.1186/s12864-020-6569-1)|
 |-M  | parameters for utils/mapcoords.pl (optional, default: -M '0.25 0.05'. 1st: max ratio of mapped positions in other blocks; 2nd: max ratio of coordinates with multiple positions in the same block)|
+|-t  | path to dir for temp files (optional, default: -t /tmp)|
 |-c  | print credits and checks install (recommended)|
 
 In our example, we set *B. distachyon* as the master reference genome for being the best quality assembly at hand
