@@ -11,7 +11,8 @@ use Memory::Usage;
 use Resources qw/ get_time_RAM /;
 
 # Takes two genome assemblies (A & B) in FASTA format and computes a Whole-Genome Alignment (WGA).
-# By default uses Cgaln for the alignments, which is single-threaded, but can also use GSAlign (-g). 
+# By default uses Cgaln for the alignments, which is single-threaded, but can also use GSAlign (-g).
+# The MAPCOORDS job is the most memory-hungry task, even more than RED or CGALN.
 # Returns a folder with several files, these are the most important:
 # 1) BED file matching 0-based coordinates from A to B 
 # 2) LOG file (text) with WGA stats
@@ -41,10 +42,10 @@ my ($fileA, $fileB, $minlenMb, $ncores, $softmask, $use_gsalign) = ('', '', 1.0,
 my ($WGA_Cgaln_params, $WGA_index_params) = ('-X4000', '-K11 -BS10000');
 my $WGA_GSAlign_params = '-no_vcf -one'; #-one, -sen
 my $MAPCOORDS_params = '0.25 0.05';
+my ($tmppath, $maxRAM) = ('/tmp', 0);
 my ($root, $cmd, $name, $tempdirA, $tempdirB, $chrcodesA, $chrcodesB);
 my ($lenfile, $tmpWGAfile, $WGAfile, $WGAdotfile, $WGAscriptfile);
 my ($outfolder, $outBEDfile, $outLOGfile, $outPDFfile);
-my $maxRAM = 0;
 
 getopts('hcmgo:M:G:n:N:C:l:A:B:', \%opts);
 
@@ -64,7 +65,8 @@ if(($opts{'h'})||(scalar(keys(%opts))==0))
   print "-G parameters for GSAlign aligner      (optional, default: -G '$WGA_GSAlign_params')\n";
   print "-M parameters for utils/mapcoords.pl   (optional, default: -M '$MAPCOORDS_params' ,\n";
   print "                                        1st: max ratio of mapped positions in other blocks,\n";
-  print "                                        2nd: max ratio of coordinates with multiple positions in same block)\n";     
+  print "                                        2nd: max ratio of coordinates with multiple positions in same block)\n";
+  print "-t path to dir for temp files          (optional, default: -t $tmppath)\n";
   print "-c print credits and checks install    (recommended)\n";
   exit(0);
 }
@@ -130,6 +132,13 @@ if(defined($opts{'n'}) && $opts{'n'} >= 0) {
   $ncores = $opts{'n'}
 }
 
+if(defined($opts{'t'})) {
+  $tmppath = $opts{'t'};
+  if(!-d $tmppath) {
+    die "# ERROR: need valid temp path (-t)\n";
+  } 
+}
+
 if(defined($opts{'g'})) { # GSAlign
 
   $use_gsalign = 1;
@@ -141,7 +150,8 @@ if(defined($opts{'g'})) { # GSAlign
   $root = basename($fileA) .'.'. basename($fileB) . '_GSAlign_' . $WGA_GSAlign_params;
   $root =~ s/\s+/_/g;
 
-  warn "## $0 -A $fileA -B $fileB -o $outfolder -l $minlenMb -g $use_gsalign -G $WGA_GSAlign_params -n $ncores\n\n";
+  warn "## $0 -A $fileA -B $fileB -o $outfolder -l $minlenMb -g $use_gsalign ".
+    "-G $WGA_GSAlign_params -n $ncores -t $tmppath\n\n";
 
 } else { # Cgaln
 
@@ -165,7 +175,7 @@ if(defined($opts{'g'})) { # GSAlign
   $root =~ s/\s+/_/g;
   
   warn "## $0 -A $fileA -B $fileB -o $outfolder -l $minlenMb -m $softmask -G $use_gsalign ".
-    "-N $WGA_index_params -C $WGA_Cgaln_params -M $MAPCOORDS_params -n $ncores\n\n";
+    "-N $WGA_index_params -C $WGA_Cgaln_params -M $MAPCOORDS_params -n $ncores -t $tmppath\n\n";
 }
 
 warn "## root: $root\n\n";
@@ -369,9 +379,9 @@ $outBEDfile = "$outfolder/$root" . '.bed';
 $outLOGfile = "$outfolder/$root" . '.coords.log';
 
 if($use_gsalign == 0) {
-  $cmd = "$MAPCOORDS $WGAfile $maskA $maskB $MAPCOORDS_params > $outBEDfile 2> $outLOGfile";
+  $cmd = "$MAPCOORDS $tmppath $WGAfile $maskA $maskB $MAPCOORDS_params > $outBEDfile 2> $outLOGfile";
 } else {
-  $cmd = "$MAPCOORDS $WGAfile $maskA $maskB $MAPCOORDS_params 1 > $outBEDfile 2> $outLOGfile";
+  $cmd = "$MAPCOORDS $tmppath $WGAfile $maskA $maskB $MAPCOORDS_params 1 > $outBEDfile 2> $outLOGfile";
 }
 system("$cmd");
 if($? != 0) {
