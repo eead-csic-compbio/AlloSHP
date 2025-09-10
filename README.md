@@ -72,6 +72,8 @@ which are named `Bdis.fna.gz` and `Bsta.fna.gz`. **Each file should have unique 
 See file `BdisBd2_BstaChr01.vcf.gz` in [sample data](https://github.com/eead-csic-compbio/vcf2alignment/tree/master/sample_data)
 for an example.
 
++ Configuration files (see [sample data](https://github.com/eead-csic-compbio/vcf2alignment/tree/master/sample_data)) for `vcf2alignment` (config.tsv) and `vcf2synteny` scripts (config.synteny.tsv (without outgroup) or config.outg.synteny.tsv (with outgroup)).
+
 
 ## 2) How to run
 
