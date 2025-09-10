@@ -197,6 +197,8 @@ printf(STDERR "# %s -r %s -v %s -c %s -l %s -o %s -d %d -m %d -V %s -p %d -H %d 
   $mindepth,$maxmissing,$outfilename2,$only_polymorphic,$het,$tmppath,
   !$reuse,!$zerobased);
 
+warn "# version: $VERSION\n\n";
+
 ######################################################
 
 my ($n_of_samples,$n_of_loci,$n_var_loci) = (0,0,0);

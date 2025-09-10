@@ -127,6 +127,8 @@ if(defined($opts{'H'})) {
 warn "# $0 -v $filename -c $configfile -l $reportfilename -o $outfilename ".
   "-d $mindepth -m $maxmissing -f $outformat -p $only_polymorphic -H $het\n\n";
 
+warn "# version: $VERSION\n\n";
+
 ######################################################
 
 my ($n_of_samples,$n_of_loci,$n_var_loci) = (0,0,0);
