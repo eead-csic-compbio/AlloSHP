@@ -1,6 +1,12 @@
 #!/usr/bin/env perl
 use strict;
 use warnings;
+use FindBin '$Bin';
+use File::Temp qw/ tempfile /;
+use DB_File;
+use lib "$Bin/../lib";
+use Memory::Usage;
+use Resources qw/ get_time_RAM /;
 
 # Parse whole-genome alignments (WGA) of A & B genomes/species 
 # with the FASTA-like format produced by CGaln and produces 
@@ -12,10 +18,12 @@ use warnings;
 my $MAXMULTIBLOCKPOSITIONS = 0.25; # max ratio of mapped positions in other blocks
 my $MAXMULTIPOSITIONS      = 0.05; # max ratio of coordinates with multiple positions in same block
 
-my ($maxmultbk,$maxmult,$cgalnfile,$fastafileA,$fastafileB,$notCgaln);
+my ($tmpdir,$maxmultbk,$maxmult,$cgalnfile,$fastafileA,$fastafileB,$notCgaln);
 
-if(!$ARGV[2]){ die "# usage: $0 <file.fasta.gz> <A fasta file> <B fasta file> [float MAXMULTIBLOCKPOSITIONS] [float MAXMULTIPOSITIONS] [boolean, not Cgaln]\n" }
-else{ ($cgalnfile,$fastafileA,$fastafileB,$maxmultbk,$maxmult,$notCgaln) = @ARGV }
+if(!$ARGV[2]){ 
+  die "# usage: $0 <tmp path> <file.fasta.gz> <A fasta file> <B fasta file> [float MAXMULTIBLOCKPOSITIONS] [float MAXMULTIPOSITIONS] [boolean, not Cgaln]\n" 
+
+} else{ ($tmpdir,$cgalnfile,$fastafileA,$fastafileB,$maxmultbk,$maxmult,$notCgaln) = @ARGV }
 
 if(!defined($maxmultbk)) {
   $maxmultbk = $MAXMULTIBLOCKPOSITIONS;
@@ -36,11 +44,28 @@ warn "# A FASTA file: $fastafileA\n";
 warn "# B FASTA file: $fastafileB\n";
 warn "# not Cgaln = $notCgaln\n\n";
 
+my $mu = Memory::Usage->new();
+$mu->record('start');
+
 my ($strandA,$chrA,$chrB,$genomeid,$cumulscore);
 my ($startA,$endA,$startB,$endB,$posname,$blockid);
 my ($seqA,$seqB,$realposA,$realposB,$aligned_position);
-my ($block,$length,$pos,$baseA,$baseB,$Aposname);
-my (%blocks,%map,%sameA,@realnameA,@realnameB,$n_of_chrs);
+my ($block,$align,$length,$pos,$baseA,$baseB,$Aposname);
+my (%blocks,%sameA,@realnameA,@realnameB,$n_of_chrs);
+
+# tied hashes, BDB under the hood 
+my (%alignments,%unique_positions,%map);
+my ($fha,$fha_tmp_file) = tempfile(SUFFIX => '_alignments.db', UNLINK => 1, DIR => $tmpdir);
+my ($fhu,$fhu_tmp_file) = tempfile(SUFFIX => '_upositions.db', UNLINK => 1, DIR => $tmpdir);
+my ($fhm,$fhm_tmp_file) = tempfile(SUFFIX => '_map.db', UNLINK => 1, DIR => $tmpdir);
+
+tie(%alignments,'DB_File',$fha_tmp_file)
+  || die "# EXIT : cannot create $fha_tmp_file: $! (BerkeleyDB::Error)\n";
+tie(%unique_positions,'DB_File',$fhu_tmp_file)
+  || die "# EXIT : cannot create $fhu_tmp_file: $! (BerkeleyDB::Error)\n";
+tie(%map,'DB_File',$fhm_tmp_file)
+  || die "# EXIT : cannot create $fhm_tmp_file: $! (BerkeleyDB::Error)\n";
+
 
 ## 1) read FASTA files to get real chr names
 $n_of_chrs = 0;
@@ -69,14 +94,20 @@ warn "# number of chrs in B FASTA file: $n_of_chrs\n";
 ## 2) parse genome alignment blocks
 open(CGALN,"zcat $cgalnfile |") || die "# cannot extract $cgalnfile\n";
 while(<CGALN>) {
+
   # block
   #####{ (forward) genomeA-fasta1 genomeB-fasta1  Bl #43
   #####{ (reverse) genomeA-fasta1_revcom  genomeB-fasta1  Bl #103
   if(/^#####\{ \((\w+)\) genomeA-fasta(\d+)\S*\s+genomeB-fasta(\d+)\s+Bl #(\d+)/) {
+
+    if(defined($blockid)) {
+      $alignments{$blockid} = $align;
+    }
+
+    $align = '';	    
     ($strandA,$chrA,$chrB,$block) = ($1,$2,$3,$4);
     ($seqA,$seqB) = ('','');
     $blockid = $strandA.'_'.$chrA.'_'.$chrB.'_'.$block;
-    #print "$strandA,$chrA,$chrB,$block\n";
 
     #initialize block 
     $blocks{$blockid}{'cumulscore'} = 0;
@@ -85,6 +116,7 @@ while(<CGALN>) {
     $blocks{$blockid}{'unique'} = 0;
 
   } elsif(/^>([AB])_fst\d+[_revcom]*:(\d+)-(\d+):HSP number \d+:score \d+:score_cumulative (\d+)/) {
+
     #>A_fst1:18718865-18718886:HSP number 14:score 44:score_cumulative 246
     #GTGTTCTTAAATATATTAATTA
     #>B_fst1:15082265-15082286:HSP number 14:score 44:score_cumulative 246
@@ -93,10 +125,10 @@ while(<CGALN>) {
     $genomeid = $1;
     $cumulscore = $4;
     if($genomeid eq 'A') { 
-      ($startA,$endA) = ($2,$3); #print "$genomeid $startA,$endA $strandA $cumulscore\n";
+      ($startA,$endA) = ($2,$3);
 
     } elsif($genomeid eq 'B') { 
-      ($startB,$endB) = ($2,$3); #print "$genomeid $startB,$endB\n" ;
+      ($startB,$endB) = ($2,$3);
     }
     
     # store block cumulative score, reported in the first alignment
@@ -107,13 +139,19 @@ while(<CGALN>) {
     if($genomeid eq 'A') { 
       $seqA = $1; 
     } elsif($genomeid eq 'B') { 
-      $seqB = $1; 
-      push(@{$blocks{$blockid}{'alignments'}},[ $startA, $endA, $seqA, $startB, $endB, $seqB ]);
+      $seqB = $1;
+
+      # actually add this pairwise alignment to string with all block's alignments      
+      $align .= "$startA,$endA,$seqA,$startB,$endB,$seqB;";
     }
   }
 }
 close(CGALN);
+
+$alignments{$blockid} = $align; # last block
+
 printf(STDERR "# total blocks: %d\n\n", scalar(keys(%blocks)));
+
 
 ### 3) sort blocks and filter out overlapping positions
 foreach $blockid (sort {$blocks{$b}{'cumulscore'}<=>$blocks{$a}{'cumulscore'} ||
@@ -121,26 +159,22 @@ foreach $blockid (sort {$blocks{$b}{'cumulscore'}<=>$blocks{$a}{'cumulscore'} ||
                         } keys(%blocks)) {
   #next if($blocks{$blockid}{'cumulscore'} > 10_000); # debugging
 
-  #printf("%s\t%d\t%d\n",
-  #  $blockid,$blocks{$blockid}{'cumulscore'},
-  #  scalar(@{$blocks{$blockid}{'alignments'}}));
-
   ($strandA,$chrA,$chrB,$block) = split(/_/,$blockid);
 
-  foreach my $align (@{$blocks{$blockid}{'alignments'}}) {
-    ($startA,$endA,$seqA) = ($align->[0],$align->[1],$align->[2]);
-    ($startB,$endB,$seqB) = ($align->[3],$align->[4],$align->[5]);
-  
+  my $unique_positions_block = '';
+  foreach $align (split(/;/, $alignments{$blockid})) {
+    ($startA,$endA,$seqA,$startB,$endB,$seqB) = split(/,/,$align);
+
     my @seqA = split(//,$seqA);
     my @seqB = split(//,$seqB);
     $length = scalar(@seqA);
 
     $realposB = $startB;
-    if($strandA eq 'forward')
-    {  
+    if($strandA eq 'forward') {  
       $realposA = $startA 
 
     } else {
+
       if($notCgaln == 0) { 
         $realposA = $startA-2; # bug in CGaln?
       } else { 
@@ -155,29 +189,22 @@ foreach $blockid (sort {$blocks{$b}{'cumulscore'}<=>$blocks{$a}{'cumulscore'} ||
       # skip lowercase soft-masked bases
       if($baseA =~ m/[A-Z]/ && $baseB =~ m/[A-Z]/) {  
         $aligned_position = 
-          sprintf("%s\t%d\t%d\t%s\t%s\t%s\t%d\t%d\t%s\t%d\t",
+          sprintf("%s\t%d\t%d\t%s\t%s\t%s\t%d\t%d\t%s\t%d\t%s\n",
             $realnameA[$chrA],$realposA,$realposA+1,$baseA,
             $strandA eq 'forward' ? '+' : '-',
             $realnameB[$chrB],$realposB,$realposB+1,$baseB,
-            $block);
+            $block,
+            $baseA ne $baseB ? "SNP" : ".");
       
-        if($baseA ne $baseB) { 
-          $aligned_position .= "SNP" 
-        } else {
-          $aligned_position .= "."
-        }
-
-        # NOTE: different coords in B.stacei/B.sylvaticum often correspond to the same coord
+        # NOTE: different coords in B.stacei/B.sylvaticum might be the same position
         $Aposname = $realnameA[$chrA].'_'.$realposA;
         $sameA{$Aposname}++;   
-
-        #if($Aposname eq '3_10934410'){ warn "OJO: $aligned_position $sameA{$Aposname} $blockid\n" } # debug
 
         # NOTE: alignments within the same block ocasionally overlap in their ends
         # When this happens only the first position reported is stored 
         $posname = $realnameB[$chrB].'_'.$realposB;
         if(!$map{$posname}) {
-          push(@{$blocks{$blockid}{'unique_positions'}}, $aligned_position);
+          $unique_positions_block .= $aligned_position;
 
           # remember this position is already mapped in this block
           $map{$posname} = $blockid;
@@ -196,11 +223,14 @@ foreach $blockid (sort {$blocks{$b}{'cumulscore'}<=>$blocks{$a}{'cumulscore'} ||
       else{ $realposA-- }
     }
   }
+
+  $unique_positions{$blockid} = $unique_positions_block;
 }
 
+
 ### 4) iterate over blocks and sort filtered mapped positions
-my $valid_blocks = 0;
-my $unique_positions = 0;
+my ($valid_blocks, $unique_positions, $multiblockratio) = (0,0);
+my (@unique_positions, @positions);
 
 warn "# list of valid blocks:\n";
 
@@ -221,20 +251,24 @@ foreach $blockid (sort {$blocks{$b}{'cumulscore'}<=>$blocks{$a}{'cumulscore'} ||
   #next if($blocks{$blockid}{'cumulscore'} > 10_000); # debugging
 
   # skip blocks with no unique positions
-  next if(!defined($blocks{$blockid}{'unique_positions'}));
+  next if(!defined($unique_positions{$blockid}));
+  @unique_positions = split(/\n/,$unique_positions{$blockid});
+  next if(scalar(@unique_positions) < 1);
 
   # skip blocks with too many positions mapped in other blocks
-  my $multiblockratio = $blocks{$blockid}{'block_overlaps'}/scalar(@{$blocks{$blockid}{'unique_positions'}});
+  $multiblockratio = $blocks{$blockid}{'block_overlaps'} / scalar(@unique_positions);
   next if($multiblockratio > $maxmultbk);
 
   # print final mapped positions
-  my (@unique_positions);
-  foreach $pos (@{$blocks{$blockid}{'unique_positions'}}) {
+  @positions = ();
+
+  foreach $pos (@unique_positions) {
     ($chrA,$realposA,$baseA) = split(/\t/,$pos,3);
     $Aposname = $chrA.'_'.$realposA; 
 
     if($sameA{$Aposname} == 1) {
-      push(@unique_positions,$pos);
+
+      push(@positions,$pos);
       $blocks{$blockid}{'unique'}++;
 
     } else {
@@ -243,20 +277,21 @@ foreach $blockid (sort {$blocks{$b}{'cumulscore'}<=>$blocks{$a}{'cumulscore'} ||
   }
 
   # print HQ positions and block stats
-  if($blocks{$blockid}{'multiple'}/scalar(@{$blocks{$blockid}{'unique_positions'}}) < $maxmult) {
-    foreach $pos (@unique_positions) {
+  if($blocks{$blockid}{'multiple'} /scalar(@unique_positions) < $maxmult) {
+
+    foreach $pos (@positions) {
       print "$pos\n";
     }
 
     # print block stats to STDERR 
     printf(STDERR "%s\t%d\t%d\t%d\t%d\t%d\t%1.3f\t%1.3f\n",
       $blockid,$blocks{$blockid}{'cumulscore'},
-      scalar(@{$blocks{$blockid}{'alignments'}}),
+      scalar(split(/;/, $alignments{$blockid})),
       $blocks{$blockid}{'unique'},
       $blocks{$blockid}{'multiple'},
       $blocks{$blockid}{'block_overlaps'},
-      $blocks{$blockid}{'unique'}/scalar(@{$blocks{$blockid}{'unique_positions'}}),
-      $blocks{$blockid}{'block_overlaps'}/scalar(@{$blocks{$blockid}{'unique_positions'}})); 
+      $blocks{$blockid}{'unique'}/scalar(@unique_positions),
+      $blocks{$blockid}{'block_overlaps'}/scalar(@unique_positions)); 
 
     $unique_positions += $blocks{$blockid}{'unique'};
     $valid_blocks++;
@@ -265,3 +300,15 @@ foreach $blockid (sort {$blocks{$b}{'cumulscore'}<=>$blocks{$a}{'cumulscore'} ||
 
 printf(STDERR "# valid blocks: %d unique positions: %d\n", 
   $valid_blocks, $unique_positions);
+
+untie(%alignments);
+untie(%unique_positions);
+untie(%map);
+unlink($fha_tmp_file);
+unlink($fhu_tmp_file);
+unlink($fhm_tmp_file);
+
+$mu->record('end');
+
+printf(STDERR "\n# time used (s): %d memory used (Mb): %2.1f\n",
+  get_time_RAM($mu->report()));
