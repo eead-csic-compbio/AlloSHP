@@ -319,6 +319,31 @@ The table shows the flags of `vcf2synteny`:
 |-N  |  new temp files, don't re-use (optional, by default temp files are re-used if available at -t)|
 |-t  |  path to dir for temp file  (optional, default: -t $tmppath)|
 
+The configuration file structure (TSV format) for `vcf2synteny` includes three blocks:
+	#**BLOCK A (mandatory)**
+    # original_sample_header	final_sample_header	config_tag
+	
+    sample1.bam	sample1	real_name
+    sample2.bam	sample2	real_name
+    ...
+    #**BLOCK B (mandatory)**
+	# ID_ref	BED_file	config_synteny_tag	
+    Ref_2	Bdis.fna.gz.Bsta.fna.gz/Bdis.fna.gz.Bsta.fna.gz_Cgaln_-K11_-BS10000_-X4000_0.25_0.05.bed	WGA
+	Ref_3
+    ...
+    Ref_master	Bd(\d+)	chrcode
+    Ref_2	Chr(\d+)	chrcode
+	Ref_3
+    ...
+	#**BLOCK C (Only if there is an outgroup)**
+    outg	Bdis.fna.gz.outg_Osat.fna.gz/Bdis.fna.gz.outg_Osat.fna.gz_Cgaln_-K11_-BS10000_-X4000_0.25_0.05.bed	WGA
+    outg	Os(\+d)	chrcode
+ 
+    # original_sample_header (1st column; Block A): For each sample, the sample name as shown in the input VCF file.
+    # final_sample_header (2nd column; Block A): For each sample, the user-chosen sample name to be displayed in downstream results.
+    # config_tag (3rd column; Block A): For each sample, a mandatory tag that must appear for `vcf2synteny` correct processing.
+	
+
 In our example, we use a toy VCF file that contains read-mapping positions on chromosomes Bd2 of *Brachypodium distachyon* and Chr01 of *Brachypodium stacei*, the LOG file computed in 2.2 section by `vcf2alignment` and the syntenic positions computed in 2.1 section by `WGA` (see config file for `vcf2synteny`):
  
     ./vcf2synteny -v sample_data/BdisBd2_BstaChr01.vcf.gz -c sample_data/config.synteny.tsv -l BdisBd2_BstaChr01.vcf.log.gz \
