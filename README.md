@@ -8,30 +8,36 @@ Rubén Sancho (1,2), Pilar Catalán (2), Bruno Contreras Moreira (1,3)
 2. Escuela Politécnica Superior de Huesca, U.Zaragoza, Spain
 3. Fundación ARAID, Zaragoza, Spain
 
+https://anaconda.org/bioconda/alloshp/badges/version.svg
+
+
 [![Build Status](https://github.com/eead-csic-compbio/AlloSHP/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/eead-csic-compbio/AlloSHP/actions/workflows/ci.yml)
+[![Anaconda-Server Badge](https://anaconda.org/bioconda/alloshp/badges/version.svg)](https://anaconda.org/bioconda/alloshp)
 
 ## Installation
 
-While this protocol was developed on Linux x86_64 systems, it should also work on MacOS settings.
+### Bioconda
+
+A bioconda recipe is available at <https://anaconda.org/bioconda/alloshp> for linux-64 and osx-64 systems.
+After activating a conda environment this software can be installed as follows:
+
+    conda install bioconda::alloshp
+
+Note the recipe includes sample data, which you can analyze in a few minutes with:
+
+    make -f ${CONDA_PREFIX}/Makefile test_conda
+
+### Local compilation
+
+This protocol has been developed and tested on Linux x86_64 systems, but it might work on MacOS settings with tweaks.
 It requires some standard Linux utilities (gzip, sort, perl, make, python3, g++, etc) and a few third-party dependencies
 which can be installed locally as follows:
 
     git clone https://github.com/eead-csic-compbio/AlloSHP.git
     cd AlloSHP
     make install
-    # optionally, takes a couple of minutes
+    # optionally, takes a few minutes
     make test
-
-#### Troubleshooting: conda environment
-
-Should the standard installation instructions fail, you might want to try the following conda approach:
-
-    conda create --name AlloSHP
-    conda activate AlloSHP
-    conda install -c conda-forge cxx-compiler zlib perl-db_file git gnuplot     
-    git clone https://github.com/eead-csic-compbio/AlloSHP.git
-    cd AlloSHP
-    make install
 
 ### Dependencies 
 
