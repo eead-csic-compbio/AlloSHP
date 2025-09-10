@@ -234,7 +234,7 @@ The table shows the flags of `vcf2alignment`:
 |-p  | take only polymorphic sites (optional, by default all sites, constant and SNPs, are taken)|
 |-H  | take also heterozygous sites (optional, by default only homozygous are taken)|
 
-The configuration file structure (TSV format) for `vcf2alignment` is:
+The configuration file structure (TSV format) for `vcf2alignment`:
 
     # original_sample_header	final_sample_header	config_tag
 	
@@ -245,7 +245,7 @@ The configuration file structure (TSV format) for `vcf2alignment` is:
 	
     # original_sample_header (1st column): For each sample, the sample name as shown in the input VCF file.
     # final_sample_header (2nd column): For each sample, the user-chosen sample name to be displayed in downstream results.
-    # config_tag (3rd column): For each sample, a mandatory tag that must appear for `vcf2alignment` correct processing.
+    # config_tag (3rd column): For each sample, a mandatory tag (real_name) that must appear for `vcf2alignment` correct processing.
 
 In our example, we use a toy VCF file that contains read-mapping positions on chromosomes Bd2 of *Brachypodium distachyon* and Chr01 of *Brachypodium stacei*:
 
@@ -343,7 +343,7 @@ The configuration file structure (TSV format) for `vcf2synteny` includes four bl
     # ---------- BLOCK C (mandatory) ----------
 	# -----------------------------------------
  
-	#  ID_ref	Chr_code	config_synteny_tag
+	# ID_ref	Chr_code	config_synteny_tag
  
     Ref_master	Chr_code_master	chrcode
     Ref_2	Chr_code_2	chrcode
@@ -353,14 +353,29 @@ The configuration file structure (TSV format) for `vcf2synteny` includes four bl
 	# ---------- BLOCK D (Only if there is an outgroup) ----------
  	# ------------------------------------------------------------
   
-    # ID_outgroup	BEF_file/Chr_code_outgroup	config_synteny_tag
+    # ID_outgroup	BED_file/Chr_code_outgroup	config_synteny_tag
 	
 	outg	PATH/Ref_master.outg.bed	WGA
     outg	Chr_code_outg	chrcode
+
+    # --------------------------------------- END ---------------------------------------
  
     # original_sample_header (1st column; Block A): For each sample, the sample name as shown in the input VCF file.
     # final_sample_header (2nd column; Block A): For each sample, the user-chosen sample name to be displayed in downstream results.
-    # config_tag (3rd column; Block A): For each sample, a mandatory tag that must appear for `vcf2synteny` correct processing.
+    # config_tag (3rd column; Block A): For each sample, a mandatory tag of block A (real_name) that must appear for `vcf2synteny` correct processing.
+	
+	# ID_ref (1st column; Block B): Abbreviation (3-4 letters; e.g., Aet for Aegilops tauschii or Bsta for Brachypodium stacei) for each secondary reference genome (and subgenomes in downstream output).
+    # BED_file (2nd column; Block B): For each secondary reference genome, BED file (and path) obtained in step 2.1.
+	# config_synteny_tag (3rd column; Block B): For each secondary reference genome, a mandatory tag of Block B (WGA) that must appear for `vcf2synteny` correct processing.
+    
+	# ID_ref (1st column; Block C): Abbreviation (3-4 letters) for master and each secondary reference genome (and subgenomes in downstream output).
+    # Chr_code (2nd column; Block C): Regular expressions (e.g., Chr(\d+)) to match chromosome names from master and secondary reference genomes used in step 2.1, can use those proposed by WGA
+	# config_synteny_tag (3rd column; Block C): For master and each secondary reference genome, a mandatory tag of Block B (chrcode) that must appear for `vcf2synteny` correct processing.
+
+    # ID_outgroup (1st column; Block D): outg abbreviation for outgroup species.
+	# BED_file/Chr_code_outgroup (2nd column; Block D): First line: For outgroup genome, BED file (and path) obtained in step 2.1.; Second line: Regular expression to match chromosome names from the outgroup genome used in step 2.1.
+    # config_synteny_tag (3rd column; Block D): A mandatory tag of Block C, first line (WGA) and second line (chrcode), that must appear for `vcf2synteny` correct processing.
+ 
 	
 
 In our example, we use a toy VCF file that contains read-mapping positions on chromosomes Bd2 of *Brachypodium distachyon* and Chr01 of *Brachypodium stacei*, the LOG file computed in 2.2 section by `vcf2alignment` and the syntenic positions computed in 2.1 section by `WGA` (see config file for `vcf2synteny`):
