@@ -234,6 +234,19 @@ The table shows the flags of `vcf2alignment`:
 |-p  | take only polymorphic sites (optional, by default all sites, constant and SNPs, are taken)|
 |-H  | take also heterozygous sites (optional, by default only homozygous are taken)|
 
+The configuration file structure (TSV format) for `vcf2alignment` is:
+
+    # original_sample_header	final_sample_header	config_tag
+	
+    sample1.bam	sample1	real_name
+    sample2.bam	sample2	real_name
+    ...
+    sampleN.bam	sampleN	real_name
+	
+    # original_sample_header (1st column): For each sample, the sample name as shown in the input VCF file.
+    # final_sample_header (2nd column): For each sample, the user-chosen sample name to be displayed in downstream results.
+    # config_tag (3rd column): For each sample, a mandatory tag that must appear for `vcf2alignment` correct processing.
+
 In our example, we use a toy VCF file that contains read-mapping positions on chromosomes Bd2 of *Brachypodium distachyon* and Chr01 of *Brachypodium stacei*:
 
     ./vcf2alignment -v sample_data/BdisBd2_BstaChr01.vcf.gz -c sample_data/config.tsv -l BdisBd2_BstaChr01.vcf.log.gz -d 5 -m 3
