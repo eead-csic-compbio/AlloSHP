@@ -236,15 +236,15 @@ The table shows the flags of `vcf2alignment`:
 
 The configuration file structure (TSV format) for `vcf2alignment` is:
 
-    # original sample header	final sample header	config_tag
+    # original_sample_header	final_sample_header	config_tag
 	
     sample1.bam	sample1	real_name
     sample2.bam	sample2	real_name
     ...
     sampleN.bam	sampleN	real_name
 	
-    # original sample header (1st column): For each sample, the sample name as shown in the input VCF file.
-    # final sample header (2nd column): For each sample, the user-chosen sample name to be displayed in downstream results.
+    # original_sample_header (1st column): For each sample, the sample name as shown in the input VCF file.
+    # final_sample_header (2nd column): For each sample, the user-chosen sample name to be displayed in downstream results.
     # config_tag (3rd column): For each sample, a mandatory tag that must appear for `vcf2alignment` correct processing.
 
 In our example, we use a toy VCF file that contains read-mapping positions on chromosomes Bd2 of *Brachypodium distachyon* and Chr01 of *Brachypodium stacei*:
