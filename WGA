@@ -44,6 +44,7 @@ my $MAPCOORDS_params = '0.25 0.05';
 my ($root, $cmd, $name, $tempdirA, $tempdirB, $chrcodesA, $chrcodesB);
 my ($lenfile, $tmpWGAfile, $WGAfile, $WGAdotfile, $WGAscriptfile);
 my ($outfolder, $outBEDfile, $outLOGfile, $outPDFfile);
+my $maxRAM = 0;
 
 getopts('hcmgo:M:G:n:N:C:l:A:B:', \%opts);
 
@@ -386,6 +387,9 @@ open(LOG,"<",$outLOGfile) || die "# EXIT: cannot read $outLOGfile\n";
 while(<LOG>) {
   if(/^# (valid blocks: \d+ unique positions: \d+)/){ 
     print "## WGA summary: $1\n";
+
+  } elsif(/# time used \(s\): \d+ memory used \(Mb\): (\S+)/) {
+    $maxRAM = $1; # map_coords consumes the most RAM
   }
 }
 close(LOG);
@@ -393,11 +397,9 @@ close(LOG);
 # 4) summary of resources 
 $mu->record('end');
 
+my ($time, $RAM) = get_time_RAM($mu->report());
 printf("\n\n\n# time used (s): %d memory used (Mb): %2.1f\n",
-  get_time_RAM($mu->report()));
-
-
-
+  $time, $maxRAM);
 
 
 
