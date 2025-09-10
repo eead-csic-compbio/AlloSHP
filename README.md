@@ -319,25 +319,44 @@ The table shows the flags of `vcf2synteny`:
 |-N  |  new temp files, don't re-use (optional, by default temp files are re-used if available at -t)|
 |-t  |  path to dir for temp file  (optional, default: -t $tmppath)|
 
-The configuration file structure (TSV format) for `vcf2synteny` includes three blocks:
-	#**BLOCK A (mandatory)**
+The configuration file structure (TSV format) for `vcf2synteny` includes four blocks:
+
+    # -----------------------------------------
+	# ---------- BLOCK A (mandatory) ----------
+    # -----------------------------------------
+	
     # original_sample_header	final_sample_header	config_tag
 	
     sample1.bam	sample1	real_name
     sample2.bam	sample2	real_name
     ...
-    #**BLOCK B (mandatory)**
-	# ID_ref	BED_file	config_synteny_tag	
-    Ref_2	Bdis.fna.gz.Bsta.fna.gz/Bdis.fna.gz.Bsta.fna.gz_Cgaln_-K11_-BS10000_-X4000_0.25_0.05.bed	WGA
-	Ref_3
+	# -----------------------------------------
+    # ---------- BLOCK B (mandatory) ----------
+	# -----------------------------------------
+ 
+	# ID_ref	BED_file	config_synteny_tag
+ 
+    Ref_2	PATH/Ref_master.Ref_2.bed	WGA
+	Ref_3	PATH/Ref_master.Ref_3.bed	WGA
     ...
-    Ref_master	Bd(\d+)	chrcode
-    Ref_2	Chr(\d+)	chrcode
-	Ref_3
+	# -----------------------------------------
+    # ---------- BLOCK C (mandatory) ----------
+	# -----------------------------------------
+ 
+	#  ID_ref	Chr_code	config_synteny_tag
+ 
+    Ref_master	Chr_code_master	chrcode
+    Ref_2	Chr_code_2	chrcode
+	Ref_3	Chr_code_3	chrcode
     ...
-	#**BLOCK C (Only if there is an outgroup)**
-    outg	Bdis.fna.gz.outg_Osat.fna.gz/Bdis.fna.gz.outg_Osat.fna.gz_Cgaln_-K11_-BS10000_-X4000_0.25_0.05.bed	WGA
-    outg	Os(\+d)	chrcode
+	# ------------------------------------------------------------
+	# ---------- BLOCK D (Only if there is an outgroup) ----------
+ 	# ------------------------------------------------------------
+  
+    # ID_outgroup	BEF_file/Chr_code_outgroup	config_synteny_tag
+	
+	outg	PATH/Ref_master.outg.bed	WGA
+    outg	Chr_code_outg	chrcode
  
     # original_sample_header (1st column; Block A): For each sample, the sample name as shown in the input VCF file.
     # final_sample_header (2nd column; Block A): For each sample, the user-chosen sample name to be displayed in downstream results.
