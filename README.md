@@ -473,7 +473,7 @@ add also -d:
 
 ## 3) Step by step analysis of datasets in main paper
 
-See folder [step_by_step_dataset_analysis_paper/](.step_by_step_dataset_analysis_paper).
+See folder [step_by_step_dataset_analysis_paper/](./step_by_step_dataset_analysis_paper)
 
 
 ## 4) Citation
