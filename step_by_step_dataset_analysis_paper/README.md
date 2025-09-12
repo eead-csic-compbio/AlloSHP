@@ -1,0 +1,223 @@
+# AlloSHP: Step-by-step analysis of datasets
+
+In this README, we show a step-by-step guide through the commands used in the analysis of the databases (Brachypodium, Brassica, Triticum-Aegilops, and Saccharomyces) used in the paper where AlloSHP was validated. Although the initial input file for AlloSHP is a VCF file, to provide a complete user guide, we also include an example bash file ([reads2vcf.sh](./reads2vcf.sh)) for filtering reads, mapping, and variant calling for each sample. Additional commands for obtaining the VCF and other intermediate steps are also shown.
+
+
+## Brachypodium dataset
+
+### VCF merge
+
+    nohup bcftools merge -i - -m both -O z -o SNPs.BRACHY.vcf.gz \
+    ABR2.vcf.gz \
+    Bd21Control.vcf.gz \
+    Bhyb26.vcf.gz \
+    Bhyb_ABR113.vcf.gz \
+    Bsta_ABR114.vcf.gz \
+    TE4-3.vcf.gz
+
+### WGA
+    
+    # B. distachyon (Master ref. genome) vs. B. stacei (secondary ref. genome)
+
+    AlloSHP/WGA -A Bdistachyon_556_v3.0.fa.gz -B Brachypodium_stacei_var_ABR114.mainGenome.fasta.gz -C '-X12000 -fc -cons'
+
+    + Output file: Bdistachyon_556_v3.0.fa.gz.Brachypodium_stacei_var_ABR114.mainGenome.fasta.gz_Cgaln_-K11_-BS10000_-X12000_-fc_-cons.bed)
+
+    # B. distachyon (Master ref. genome) vs. O. sativa (outgroup ref. genome)    
+
+    AlloSHP/WGA -A Bdistachyon_556_v3.0.fa.gz -B Osat_GCF_034140825.1_ASM3414082v1_genomic.vcf2alignment.fna.gz -C '-X12000 -fc -cons'
+
+    + Output file: Bdistachyon_556_v3.0.fa.gz.Osat_GCF_034140825.1_ASM3414082v1_genomic.vcf2alignment.fna.gz_Cgaln_-K11_-BS10000_-X12000_-fc_-cons_0.25_0.05.bed
+
+### VCF2ALIGNMENT
+
+    AlloSHP/vcf2alignment -v SNPs.BRACHY.vcf.gz -c config_outg_Brachy.tsv -l Bdis_Bsta_outg.vcf.log.gz -d 5 -m 3
+
+### VCF2SYNTENY
+
+    AlloSHP/vcf2synteny -v SNPs.BRACHY.vcf.gz -c configsynt_outg_Brachy.tsv -l Bdis_Bsta_outg.vcf.log.gz -d 5 -m 3 -r Bdis -o SNPs.BRACHY.synteny_outg.fasta
+
+### Remove artifactual subgenomes
+
+    # Create a list with the headers of the "true" subgenomes --> list_subgenomes_Brachy.txt
+
+    grep --no-group-separator -f list_subgenomes_Brachy.txt -A 1 SNPs.BRACHY.synteny_outg.fasta > SNPs.BRACHY.synteny_outg.subgenomes.fasta
+
+### Phylogenetic analysis (optional)
+
+    # To keep only parsimony-informative sites to go ahead with the phylogenetic analysis
+
+    snp-sites -o SNPs.BRACHY.synteny_outg.subgenomes.snpsites.fasta SNPs.BRACHY.synteny_outg.subgenomes.fasta
+
+    # Run iqtree2
+
+    iqtree-2.2.2.6-Linux/bin/iqtree2 -s ../SNPs.BRACHY.synteny_outg.subgenomes.snpsites.fasta -m MFP+ASC -AICc -alrt 1000 -B 1000 -T AUTO
+
+
+## Brassica dataset
+
+### VCF merge
+
+    bcftools merge -i - -m both -O z -o SNPs.BRASSICA.vcf.gz \
+    Br_ole_cap.vcf.gz \
+    Br_ole_ole.vcf.gz \
+    Br_rap_chi.vcf.gz \
+    Br_rap_tri.vcf.gz \
+    R16GE06.vcf.gz \
+    R16GE38.vcf.gz \
+    R16GE39.vcf.gz \
+    R16GE44.vcf.gz \
+    R16GE45.vcf.gz
+
+### WGA
+
+    # Br. oleracea (Master ref. genome) vs. Br. rapa (secondary ref. genome)
+
+    AlloSHP/WGA -A Brassica_oleracea_GCF_000695525.1_BOL_genomic.vcf2alignment.fna.gz -B Brassica_rapa_GCF_000309985.2_CAAS_Brap_v3.01_genomic.vcf2alignment.fna.gz -C '-X12000 -fc -cons'
+
+    + Output file: Brassica_oleracea_GCF_000695525.1_BOL_genomic.vcf2alignment.fna.gz.Brassica_rapa_GCF_000309985.2_CAAS_Brap_v3.01_genomic.vcf2alignment.fna.gz_Cgaln_-K11_-BS10000_-X12000_-fc_-cons.bed
+
+### VCF2ALIGNMENT
+
+    AlloSHP/vcf2alignment -v SNPs.BRASSICA.vcf.gz -c config_Brassica.tsv -l Bro_Brr.vcf.log.gz -d 5 -m 5
+
+### VCF2SYNTENY
+
+   AlloSHP/vcf2synteny -v SNPs.BRASSICA.vcf.gz -c configsynt_Brassica.tsv -l Bro_Brr.vcf.log.gz -d 5 -m 5 -r Bro -o SNPs.BRASSICA.synteny.fasta
+
+### Remove artifactual subgenomes
+
+    # Create a list with the headers of the "true" subgenomes --> list_subgenomes_Brassica.txt
+
+    grep --no-group-separator -f list_subgenomes_Brassica.txt -A 1 SNPs.BRASSICA.synteny.fasta > SNPs.BRASSICA.synteny.subgenomes.fasta
+
+### Phylogenetic analysis (optional)
+
+    # To keep only parsimony-informative sites to go ahead with the phylogenetic analysis
+
+    snp-sites -o SNPs.BRASSICA.synteny.subgenomes.snpsites.fasta SNPs.BRASSICA.synteny.subgenomes.fasta
+
+    # Run iqtree2
+
+    iqtree-2.2.2.6-Linux/bin/iqtree2 -s SNPs.BRASSICA.synteny.subgenomes.snpsites.fasta -m MFP+ASC -AICc -alrt 1000 -B 1000 -T AUTO
+
+
+## Triticum-Aegilops dataset
+
+### VCF merge
+
+    bcftools merge -i - -m both -O z -o SNPs.TRITICUM.vcf.gz \
+    Ae_speltoides.vcf.gz \
+    Ae_speltoides_T.vcf.gz \
+    Ae_tauschii.vcf.gz \
+    Taestivum.vcf.gz \
+    Tturgidum.vcf.gz \
+    T_urartu.vcf.gz
+
+### WGA
+
+    # T. urartu (Master ref. genome) vs. Ae. tauschii (secondary ref. genome)
+
+    AlloSHP/WGA -A Triticum_urartu_GCF_003073215.2_Tu2.1_genomic.vcf2alignment.fna.gz -B Aegilops_tauschii_GCF_002575655.2_Aet_v5.0_genomic.vcf2alignment.fna.gz -C '-k2 -BS20000 -X10000 -fc -cons' -N '-K12 -BS20000'
+
+    # Output file: Triticum_urartu_GCF_003073215.2_Tu2.1_genomic.vcf2alignment.fna.gz.Aegilops_tauschii_GCF_002575655.2_Aet_v5.0_genomic.vcf2alignment.fna.gz_Cgaln_-K12_-BS20000_-k2_-BS20000_-X10000_-fc_-cons.bed
+
+    # T. urartu (Master ref. genome) vs. Ae. speltoides (secondary ref. genome)
+
+    AlloSHP/WGA -A Triticum_urartu_GCF_003073215.2_Tu2.1_genomic.vcf2alignment.fna.gz -B Aegilops_speltoides_GCA_021437245.1_ASM2143724v1_genomic.vcf2alignment.fna.gz -C '-k2 -BS20000 -X10000 -fc -cons' -N '-K12 -BS20000'
+
+    # Triticum_urartu_GCF_003073215.2_Tu2.1_genomic.vcf2alignment.fna.gz.Aegilops_speltoides_GCA_021437245.1_ASM2143724v1_genomic.vcf2alignment.fna.gz_Cgaln_-K12_-BS20000_-k2_-BS20000_-X10000_-fc_-cons.bed
+
+### VCF2ALIGNMENT
+
+    AlloSHP/vcf2alignment -v SNPs.TRITICUM.vcf.gz -c config_Triticum.tsv -l Tru_Ae.vcf.log.gz -d 5 -m 4 
+
+### VCF2SYNTENY
+
+    AlloSHP/vcf2synteny -v SNPs.TRITICUM.vcf.gz -c configsynt_Triticum.tsv -l Tru_Ae.vcf.log.gz -d 5 -m 4 -r Tru -o SNPs.TRITICUM.synteny.fasta
+
+### Remove artifactual subgenomes
+
+    # Create a list with the headers of the "true" subgenomes --> list_subgenomes_Triticum.txt
+
+    grep --no-group-separator -f list_subgenomes_Triticum.txt -A 1 SNPs.TRITICUM.synteny.fasta > SNPs.TRITICUM.synteny.subgenomes.fasta
+
+### Phylogenetic analysis (optional)
+
+    # To keep only parsimony-informative sites to go ahead with the phylogenetic analysis
+
+    snp-sites -o SNPs.TRITICUM.synteny.subgenomes.snpsites.fasta SNPs.TRITICUM.synteny.subgenomes.fasta
+
+    # Run iqtree2
+
+    iqtree-2.2.2.6-Linux/bin/iqtree2 -s SNPs.TRITICUM.synteny.subgenomes.snpsites.fasta -m MFP+ASC -AICc -alrt 1000 -B 1000 -T AUTO
+
+
+## Saccharomyces dataset
+
+### VCF merge
+
+    bcftools merge -i - -m both -O z -o SNPs.SACCHAROMYCES.vcf.gz \
+    ERR9706976.vcf.gz \
+    SRR13512344.vcf.gz \
+    SRR1868557.vcf.gz \
+    SRR7370090.vcf.gz \
+    SRR7370096.vcf.gz \
+    SRR7769310.vcf.gz \
+    SRR7769312.vcf.gz \
+    SRR7769313.vcf.gz \
+    SRR7769316.vcf.gz \
+    SRR7769317.vcf.gz \
+    SRR7769319.vcf.gz \
+    SRR7769320.vcf.gz
+
+### WGA
+
+    # S. cerevisiae (Master ref. genome) vs S.  (secondary ref. genome)
+
+    AlloSHP/WGA -A Scerevisiae_GCF_000146045.2_R64_genomic.fna -B Skudriavzevii_GCF_947243775.1_Skud-IFO1802_genomic.fna -M '0.25 0.2' -l 0 -C '-X4000'
+
+    # Output file: Scerevisiae_GCF_000146045.2_R64_genomic.fna.Skudriavzevii_GCF_947243775.1_Skud-IFO1802_genomic.fna_Cgaln_-K11_-BS10000_-X4000_0.25_0.2.bed
+
+    # S. cerevisiae (Master ref. genome) vs S. mikatae (secondary ref. genome)
+
+    AlloSHP/WGA -A Scerevisiae_GCF_000146045.2_R64_genomic.fna -B Smikatae_GCF_947241705.1_Smik-IFO1815_genomic.fna -M '0.25 0.2' -l 0 -C '-X4000'
+
+    # Output file: Scerevisiae_GCF_000146045.2_R64_genomic.fna.Smikatae_GCF_947241705.1_Smik-IFO1815_genomic.fna_Cgaln_-K11_-BS10000_-X4000_0.25_0.2.bed
+
+    # S. cerevisiae (Master ref. genome) vs S. paradoxus (secondary ref. genome)
+
+    AlloSHP/WGA -A Scerevisiae_GCF_000146045.2_R64_genomic.fna -B Sparadoxus_GCF_002079055.1_ASM207905v1_genomic.fna -M '0.25 0.2' -l 0 -C '-X4000'
+
+    # Output file: Scerevisiae_GCF_000146045.2_R64_genomic.fna.Sparadoxus_GCF_002079055.1_ASM207905v1_genomic.fna_Cgaln_-K11_-BS10000_-X4000_0.25_0.2.bed
+
+    # S. cerevisiae (Master ref. genome) vs S. uvarum (secondary ref. genome)
+
+    AlloSHP/WGA -A Scerevisiae_GCF_000146045.2_R64_genomic.fna -B Suvarum_GCA_947243795.1_Suva-ZP964_genomic.fna -M '0.25 0.2' -l 0 -C '-X4000'
+
+    # Output file: Scerevisiae_GCF_000146045.2_R64_genomic.fna.Suvarum_GCA_947243795.1_Suva-ZP964_genomic.fna_Cgaln_-K11_-BS10000_-X4000_0.25_0.2.bed
+
+### VCF2ALIGNMENT
+
+    AlloSHP/vcf2alignment -v SNPs.SACCHAROMYCES.vcf.gz -c config_Saccharomyces.tsv -l Sce_Sku_Smi_Spa_Suv.vcf.log.gz -d 5 -m 10
+
+### VCF2SYNTENY
+
+    AlloSHP/vcf2synteny -v SNPs.SACCHAROMYCES.vcf.gz -c configsynt_Saccharomyces.tsv -l Sce_Sku_Smi_Spa_Suv.vcf.log.gz -d 5 -m 10 -r Sce -o SNP.Saccharomyces.synteny.fasta
+
+### Remove artifactual subgenome
+
+    # Create a list with the headers of the "true" subgenomes -->  list_subgenomes_Saccharomyces.txt
+
+    grep --no-group-separator -f list_subgenomes_Saccharomyces.txt -A 1 SNP.Saccharomyces.synteny.fasta > SNP.Saccharomyces.synteny.subgenomes.fasta
+
+### Phylogenetic analysis (optional)
+
+    # To keep only parsimony-informative sites to go ahead with the phylogenetic analysis
+
+    snp-sites -o SNP.Saccharomyces.synteny.subgenomes.snpsites.fasta SNP.Saccharomyces.synteny.subgenomes.fasta
+
+    # Run iqtree2
+
+    iqtree-2.2.2.6-Linux/bin/iqtree2 -s SNP.Saccharomyces.synteny.subgenomes.snpsites.fasta -m MFP+ASC -AICc -alrt 1000 -B 1000 -T AUTO
+
