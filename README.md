@@ -470,7 +470,13 @@ add also -d:
 
     ./vcf2alignment -v sample_data/BdisBd2_BstaChr01.vcf.gz -c sample_data/config.tsv -l BdisBd2_BstaChr01.log.gz -d 0 -o BdisBd2_BstaChr01.fasta
 
-## 3) Citation
+
+## 3) Step by step analysis of datasets in main paper
+
+See folder [step_by_step_dataset_analysis_paper/](.step_by_step_dataset_analysis_paper).
+
+
+## 4) Citation
 
 Main paper:
 
