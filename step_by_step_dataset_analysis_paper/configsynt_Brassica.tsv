@@ -1,0 +1,12 @@
+Br_ole_cap.sort.bam	Br.oleracea_cap	real_name
+Br_ole_ole.sort.bam	Br.oleracea_ole	real_name
+Br_rap_chi.sort.bam	Br.rapa_chi	real_name
+Br_rap_tri.sort.bam	Br.rapa_tri	real_name
+R16GE06.sort.bam	Br.napus_R16GE06	real_name
+R16GE38.sort.bam	Br.napus_R16GE38	real_name
+R16GE39.sort.bam	Br.napus_R16GE39	real_name
+R16GE44.sort.bam	Br.napus_R16GE44	real_name
+R16GE45.sort.bam	Br.napus_R16GE45	real_name
+Brr	./Brassica_oleracea_GCF_000695525.1_BOL_genomic.vcf2alignment.fna.gz.Brassica_rapa_GCF_000309985.2_CAAS_Brap_v3.01_genomic.vcf2alignment.fna.gz/Brassica_oleracea_GCF_000695525.1_BOL_genomic.vcf2alignment.fna.gz.Brassica_rapa_GCF_000309985.2_CAAS_Brap_v3.01_genomic.vcf2alignment.fna.gz_Cgaln_-K11_-BS10000_-X12000_-fc_-cons.bed	WGA
+Bro	Bro(\d+)	chrcode
+Brr	Brr(\d+)	chrcode

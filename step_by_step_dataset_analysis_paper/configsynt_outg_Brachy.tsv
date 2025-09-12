@@ -1,0 +1,11 @@
+ABR2.sort.bam	Bdis_ABR2	real_name
+Bd21Control.sort.bam	Bdis_Bd21Control	real_name
+Bhyb26.sort.bam	Bhyb_Bhyb26	real_name
+Bhyb_ABR113_concat.sort.bam	Bhyb_ABR113	real_name
+Bsta_ABR114_concat.sort.bam	Bsta_ABR114	real_name
+TE4-3.sort.bam	Bsta_TE4.3	real_name
+Bsta	Bdistachyon_556_v3.0.fa.gz.Brachypodium_stacei_var_ABR114.mainGenome.fasta.gz_Cgaln_-K11_-BS10000_-X12000_-fc_-cons.bed	WGA
+Bdis	Bd(\d+)	chrcode
+Bsta	Chr(\d+)	chrcode
+outg	Bdistachyon_556_v3.0.fa.gz.Osat_GCF_034140825.1_ASM3414082v1_genomic.vcf2alignment.fna.gz_Cgaln_-K11_-BS10000_-X12000_-fc_-cons_0.25_0.05.bed	WGA
+outg	Os(\d+)	chrcode

@@ -1,0 +1,9 @@
+>Ae.speltoides_Aes
+>Ae.speltoides_T_Aes
+>Ae.tauschii_Aet
+>T.aestivum_Aes
+>T.aestivum_Aet
+>T.aestivum_Tru
+>T.turgidum_Aes
+>T.turgidum_Tru
+>T.urartu_Tru

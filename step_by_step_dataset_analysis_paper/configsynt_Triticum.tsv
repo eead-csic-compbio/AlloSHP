@@ -1,0 +1,11 @@
+Ae_speltoides.sort.bam	Ae.speltoides	real_name
+Ae_speltoides_T.sort.bam	Ae.speltoides_T	real_name
+Ae_tauschii.sort.bam	Ae.tauschii	real_name
+Taestivum.sort.bam	T.aestivum	real_name
+Tturgidum.sort.bam	T.turgidum	real_name
+T_urartu.sort.bam	T.urartu	real_name
+Aes	./Triticum_urartu_GCF_003073215.2_Tu2.1_genomic.vcf2alignment.fna.gz.Aegilops_speltoides_GCA_021437245.1_ASM2143724v1_genomic.vcf2alignment.fna.gz_Cgaln_-K12_-BS20000_-k2_-BS20000_-X10000_-fc_-cons.bed	WGA
+Aet	./Triticum_urartu_GCF_003073215.2_Tu2.1_genomic.vcf2alignment.fna.gz.Aegilops_tauschii_GCF_002575655.2_Aet_v5.0_genomic.vcf2alignment.fna.gz_Cgaln_-K12_-BS20000_-k2_-BS20000_-X10000_-fc_-cons.bed	WGA
+Tru	Tru(\d+)	chrcode
+Aes	Aes(\d+)	chrcode
+Aet	Aet(\d+)	chrcode

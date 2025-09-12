@@ -1,0 +1,14 @@
+>Br.oleracea_cap_Bro
+>Br.oleracea_ole_Bro
+>Br.rapa_chi_Brr
+>Br.rapa_tri_Brr
+>Br.napus_R16GE06_Bro
+>Br.napus_R16GE06_Brr
+>Br.napus_R16GE38_Bro
+>Br.napus_R16GE38_Brr
+>Br.napus_R16GE39_Bro
+>Br.napus_R16GE39_Brr
+>Br.napus_R16GE44_Bro
+>Br.napus_R16GE44_Brr
+>Br.napus_R16GE45_Bro
+>Br.napus_R16GE45_Brr
