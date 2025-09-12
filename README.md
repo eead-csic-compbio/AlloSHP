@@ -8,9 +8,6 @@ Rubén Sancho (1,2), Pilar Catalán (2), Bruno Contreras Moreira (1,3)
 2. Escuela Politécnica Superior de Huesca, U.Zaragoza, Spain
 3. Fundación ARAID, Zaragoza, Spain
 
-https://anaconda.org/bioconda/alloshp/badges/version.svg
-
-
 [![Build Status](https://github.com/eead-csic-compbio/AlloSHP/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/eead-csic-compbio/AlloSHP/actions/workflows/ci.yml)
 [![Anaconda-Server Badge](https://anaconda.org/bioconda/alloshp/badges/version.svg)](https://anaconda.org/bioconda/alloshp)
 
@@ -30,7 +27,7 @@ Note the recipe includes sample data, which you can analyze in a few minutes wit
 ### Local compilation
 
 This protocol has been developed and tested on Linux x86_64 systems, but it might work on MacOS settings with tweaks.
-It requires some standard Linux utilities (gzip, sort, perl, make, python3, g++, etc) and a few third-party dependencies
+It requires some standard Linux utilities (gzip, sort, perl, make, python3, g++) and a few third-party dependencies
 which can be installed locally as follows:
 
     git clone https://github.com/eead-csic-compbio/AlloSHP.git
@@ -51,9 +48,7 @@ The table shows the main dependencies of this package:
 |Red2Ensembl.py|   |https://github.com/Ensembl/plant-scripts|requires python3|
 |gnuplot|  |http://www.gnuplot.info|required for dotplots in PDF format| 
 
-Other Linux dependencies required include: `wget python3 g++ gnuplot-qt libdb-dev` 
-
-See [ci.yml](https://github.com/eead-csic-compbio/vcf2alignment/blob/master/.github/workflows/ci.yml).
+Other Linux dependencies required include: `wget python3 g++ gnuplot-qt libdb-dev`, see [ci.yml](https://github.com/eead-csic-compbio/vcf2alignment/blob/master/.github/workflows/ci.yml) for complete list for Ubuntu.
 
 ## Pipeline overview
 
@@ -89,7 +84,7 @@ Note that the steps below can be run in one go as follows:
 
 Script `WGA` must be computed to find syntenic segments among the diploid reference genomes available for read mapping.
 By default, this uses [CGaln](https://github.com/rnakato/Cgaln),
-which requires the input sequences to be [soft-masked](https://genomevolution.org/wiki/index.php/Masked) 
+which requires the input sequences to be [soft-masked](https://genomevolution.org/wiki/index.php?title=Masked) 
 (this is also taken care of by the script).
 The table shows the flags of this script:
 
@@ -182,7 +177,8 @@ The BED file produced by `WGA` looks like this:
     Bd2     44989677        44989678        C       -       Chr01   13393567        13393568        C       10      .
     ...
 
-    Where:
+Where:
+
     + chrA: Name of the chromosome regarding the Master reference genome
     + posA: Start position regarding the Master reference genome
     + endA: End position regarding the Master reference genome
@@ -192,9 +188,12 @@ The BED file produced by `WGA` looks like this:
     + posB: Start position regarding the Secondary reference genome
     + endB: End position regarding the Secondary reference genome
     + baseB: Nucleotide base regarding the Secondary reference genome
-    + block: Syntenic block according to CGaln
-    + SNP: SNP between reference genomes
+    + block: Number of Syntenic block
+    + SNP: is it a SNP between reference genomes or not (.)
  
+**Note that such a file like can be obtained from other sources**, for instance after alignment of orthologues,
+allowing users to feed the pipeline with alternative SNPs, for instance in cases where genome alignments
+are highly fragmented.
 
 Alternatively, the GSAlign WGA algorithm can be invoked as follows, with flag `-g`:
  
