@@ -191,9 +191,7 @@ Where:
     + block: Number of Syntenic block
     + SNP: is it a SNP between reference genomes or not (.)
  
-**Note that such a file like can be obtained from other sources**, for instance after alignment of orthologues,
-allowing users to feed the pipeline with alternative SNPs, for instance in cases where genome alignments
-are highly fragmented.
+> **_NOTE:_**  such a file like can be obtained from other sources**, for instance after alignment of orthologues, allowing users to feed the pipeline with alternative SNPs, for instance in cases where genome alignments are highly fragmented.
 
 Alternatively, the GSAlign WGA algorithm can be invoked as follows, with flag `-g`:
  
