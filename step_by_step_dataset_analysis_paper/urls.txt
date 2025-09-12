@@ -1,0 +1,13 @@
+https://github.com/eead-csic-compbio/AlloSHP/releases/download/data_paper/Bdistachyon_556_v3.0.fa.gz.Brachypodium_stacei_var_ABR114.mainGenome.fasta.gz_Cgaln_-K11_-BS10000_-X12000_-fc_-cons.bed.bz2
+https://github.com/eead-csic-compbio/AlloSHP/releases/download/data_paper/Bdistachyon_556_v3.0.fa.gz.Osat_GCF_034140825.1_ASM3414082v1_genomic.vcf2alignment.fna.gz_Cgaln_-K11_-BS10000_-X12000_-fc_-cons_0.25_0.05.bed.bz2
+https://github.com/eead-csic-compbio/AlloSHP/releases/download/data_paper/Brassica_oleracea_GCF_000695525.1_BOL_genomic.vcf2alignment.fna.gz.Brassica_rapa_GCF_000309985.2_CAAS_Brap_v3.01_genomic.vcf2alignment.fna.gz_Cgaln_-K11_-BS10000_-X12000_-fc_-cons.bed.bz2
+https://github.com/eead-csic-compbio/AlloSHP/releases/download/data_paper/Scerevisiae_GCF_000146045.2_R64_genomic.fna.Skudriavzevii_GCF_947243775.1_Skud-IFO1802_genomic.fna_Cgaln_-K11_-BS10000_-X4000_0.25_0.2.bed.bz2
+https://github.com/eead-csic-compbio/AlloSHP/releases/download/data_paper/Scerevisiae_GCF_000146045.2_R64_genomic.fna.Smikatae_GCF_947241705.1_Smik-IFO1815_genomic.fna_Cgaln_-K11_-BS10000_-X4000_0.25_0.2.bed.bz2
+https://github.com/eead-csic-compbio/AlloSHP/releases/download/data_paper/Scerevisiae_GCF_000146045.2_R64_genomic.fna.Sparadoxus_GCF_002079055.1_ASM207905v1_genomic.fna_Cgaln_-K11_-BS10000_-X4000_0.25_0.2.bed.bz2
+https://github.com/eead-csic-compbio/AlloSHP/releases/download/data_paper/Scerevisiae_GCF_000146045.2_R64_genomic.fna.Suvarum_GCA_947243795.1_Suva-ZP964_genomic.fna_Cgaln_-K11_-BS10000_-X4000_0.25_0.2.bed.bz2
+https://github.com/eead-csic-compbio/AlloSHP/releases/download/data_paper/SNP.Saccharomyces.synteny.subgenomes.snpsites.fasta.bz2
+https://github.com/eead-csic-compbio/AlloSHP/releases/download/data_paper/SNPs.BRACHY.synteny_outg.subgenomes.snpsites.fasta.bz2
+https://github.com/eead-csic-compbio/AlloSHP/releases/download/data_paper/SNPs.BRASSICA.synteny.subgenomes.snpsites.fasta.bz2
+https://github.com/eead-csic-compbio/AlloSHP/releases/download/data_paper/SNPs.TRITICUM_2025.synteny.subgenomes.snpsites.fasta.bz2
+https://github.com/eead-csic-compbio/AlloSHP/releases/download/data_paper/Triticum_urartu_GCF_003073215.2_Tu2.1_genomic.vcf2alignment.fna.gz.Aegilops_speltoides_GCA_021437245.1_ASM2143724v1_genomic.vcf2alignment.fna.gz_Cgaln_-K12_-BS20000_-k2_-BS20000_-X10000_-fc_-cons.bed.bz2
+https://github.com/eead-csic-compbio/AlloSHP/releases/download/data_paper/Triticum_urartu_GCF_003073215.2_Tu2.1_genomic.vcf2alignment.fna.gz.Aegilops_tauschii_GCF_002575655.2_Aet_v5.0_genomic.vcf2alignment.fna.gz_Cgaln_-K12_-BS20000_-k2_-BS20000_-X10000_-fc_-cons.bed.bz2
