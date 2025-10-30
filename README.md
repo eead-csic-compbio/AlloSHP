@@ -480,8 +480,7 @@ See folder [step_by_step_dataset_analysis_paper/](./step_by_step_dataset_analysi
 
 Main paper:
 
-Sancho R, Catalan P, Vogel JP, Contreras-Moreira B (2025) Deconvolution of Single Homeologous Polymorphism (SHP) drives phylogenetic analysis of allopolyploids.
-bioRxiv 2025.07.17.665301; doi: https://doi.org/10.1101/2025.07.17.665301 
+Sancho R, Catalan P, Vogel JP, Contreras-Moreira B (2025) Deconvoluting single homeologous polymorphism for phylogenetic analysis of allopolyploids. Plant Methods 21,134. https://doi.org/10.1186/s13007-025-01458-6
 
 Key dependencies:
 
